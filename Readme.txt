@@ -1,4 +1,5 @@
 Aim: To analyze data over a 15 year time frame over various financial indices.
+Our questions:
 1.How is the performance of the S&P 500 and NASDAQ affected by the changes in the US Dollar Index
 2. How do changes in Federal Reserve (Fed) interest rates, the LIBOR index, the yield of the US 10-Year Bond, and the SOFR (Secured Overnight Financing Rate) influence the NASDAQ Composite Index performance
 3. What are the dynamic relationships among the S&P 500, NASDAQ Composite Index, Bitcoin (BTC) prices, and the Crypto 10 Index, and how do fluctuations in trading volumes
