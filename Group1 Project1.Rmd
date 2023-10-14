@@ -1,0 +1,144 @@
+---
+title: "Intro to Data Science - Group1 Project1"
+author: "Group 1"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    code_folding: hide
+    number_sections: false
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+  pdf_document:
+    toc: yes
+    toc_depth: '3'
+---
+
+#Question1
+
+```{r, echo=FALSE}
+library(readr)
+library(readxl)
+library(utils)
+Nasdaq <- read_csv("Nasdaq 100 Historical Data.csv")
+SP500 <- read_csv("S&P 500 Historical Data.csv")
+USDIndex <- read_csv("US Dollar Index Historical Data.csv") 
+Nasdaq$Date <- as.Date(Nasdaq$Date, format = "%m/%d/%Y")
+Nasdaq <- subset(Nasdaq, select = -Vol.)
+SP500$Date <- as.Date(SP500$Date, format = "%m/%d/%Y")
+SP500 <- subset(SP500, select = -Vol.)
+USDIndex$Date <- as.Date(USDIndex$Date, format = "%m/%d/%Y")
+USDIndex <- subset(USDIndex, select = -Vol.)
+Nasdaq=Nasdaq[rev(1:nrow(Nasdaq)), ]
+SP500=SP500[rev(1:nrow(SP500)), ]
+USDIndex=USDIndex[rev(1:nrow(USDIndex)), ]
+SP500$Price <- as.numeric(gsub(",", "", SP500$Price))
+Nasdaq$Price <- as.numeric(gsub(",", "", Nasdaq$Price))
+
+str(Nasdaq)
+str(USDIndex)
+str(SP500)
+missing_values <- sum(is.na(Nasdaq))
+missing_values <- sum(is.na(SP500))
+```
+
+#   1-    Histograms
+
+```{r, echo=FALSE}
+library(ggplot2)
+ggplot(Nasdaq, aes(x = Price)) +
+  geom_histogram(binwidth = 10, fill = "blue", color = "black") +
+  labs(title = "Nasdaq Price Histogram", x = "Price", y = "Frequency")
+ggplot(USDIndex, aes(x = Price)) +
+  geom_histogram(binwidth = 0.5, fill = "green", color = "black") +
+  labs(title = "USDIndex Price Histogram", x = "Price", y = "Frequency")
+ggplot(SP500, aes(x = Price)) +
+  geom_histogram(binwidth = 10, fill = "red", color = "black") +
+  labs(title = "SP500 Price Histogram", x = "Price", y = "Frequency")
+```
+
+Each histogram shows us that the different variable: "US Dollar index", "Nasdaq Index" and "S&P500" are normally distributted with different skewedness acroos the plot.
+
+# 2-    Boxplot for each variables
+
+```{r, echo=FALSE}
+library(ggplot2)
+ggplot(Nasdaq, aes(y = Price)) +
+  geom_boxplot() +
+  labs(title = "Nasdaq Price Box Plot")
+ggplot(USDIndex, aes(y = Price)) +
+  geom_boxplot() +
+  labs(title = "USDIndex Price Box Plot")
+ggplot(SP500, aes(y = Price)) +
+  geom_boxplot() +
+  labs(title = "SP500 Price Box Plot")
+```
+
+Accoording to these boxplots, we only have outliers with our Nasdaq variable.
+
+# 3-    Merge the data frames to filter USDIndex by Nasdaq's dates
+
+```{r, echo=FALSE}
+merged_data <- merge(Nasdaq, USDIndex, by = "Date")
+str(merged_data)
+```
+
+# 4-    Correlation between Nasdaq & US Dollar price Index
+
+```{r, echo=FALSE}
+corr_coef <- cor(merged_data$Price.x, merged_data$Price.y)
+cat("Pearson Correlation Test :", corr_coef, "\n")
+```
+
+A correlation coefficient of 0.71246 between the US Dollar Index and the Nasdaq Index Price suggests a relatively strong positive linear relationship between these two variables. Meaning that when the US Dollar Index increases, the Nasdaq Index tends to increase as well.
+
+# 5-    Line Plots
+#   a-    Nasdaq Index & US Dollar Index
+
+```{r, echo=FALSE}
+library(ggplot2)
+library(gridExtra)
+
+plot_nasdaq <- ggplot(data = merged_data, aes(x = Date)) +
+  geom_line(aes(y = Price.x, color = "Nasdaq")) +
+  labs(x = "Date", y = "Price") +
+  scale_color_manual(values = c("Nasdaq" = "blue")) +
+  ggtitle("Nasdaq Index Price")
+plot_USDollar <- ggplot(data = merged_data, aes(x = Date)) +
+  geom_line(aes(y = Price.y, color = "US Dollar")) +
+  labs(x = "Date", y = "Price") +
+  scale_color_manual(values = c("US Dollar" = "red")) +
+  ggtitle("US Dollar Index Price")
+grid.arrange(plot_nasdaq, plot_USDollar, ncol = 2)
+```
+
+These two line plots are showing a similar trend. With each upward or downward trend noticed in Nasdaq plot, we can aslo find similar trend on US Dollar plot at any time t.
+
+#   b-    Nasdaq and S&P 500
+
+```{r, echo=FALSE} 
+ggplot() +
+  geom_line(data = Nasdaq, aes(x = Date, y = Price, color = "Nasdaq"), size = 0.75) +
+  geom_line(data = SP500, aes(x = Date, y = Price, color = "S&P 500"), size = 0.75) +
+  labs(
+    title = "Nasdaq and S&P 500 Comparison",
+    x = "Date",
+    y = "Price",
+    color = "Index"
+  ) +
+  scale_color_manual(values = c("Nasdaq" = "green", "S&P 500" = "lightblue")) +
+  theme_minimal()
+```
+
+From this comparison line plot, we can infer that Nasdaq and S&P500 have a positive relationship. Even though subtle, we can follow the movement of both variables across the chosen time frame and note that in every increase in S&P500 Index, there is also a quite significant increase in Nasdq Index.
+
+# 6-    Scatter plot
+
+```{r, echo=FALSE}
+ggplot(data = SP500, aes(x = Price, y = Nasdaq$Price)) +
+     geom_point() +
+     labs(x = "S&P 500 Price", y = "Nasdaq Price") +
+     ggtitle("Scatter Plot of S&P 500 Price vs. Nasdaq Price")
+```
+
+With this scatter plot, we can better identify the positive relationship betwwen S$P 500 Index and Nasdaq Index. we can infer that with every increase in Nasdaq, we can expect S&P 500 to increase as well.
