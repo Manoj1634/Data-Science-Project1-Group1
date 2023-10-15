@@ -1,0 +1,196 @@
+---
+title: "Intro to Data Science - Group1 Project1"
+author: "Yasaswitha"
+date: "10-15-2023"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+#Question1
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r}
+Nasdaq=read.csv("C:/Users/gpras/Downloads/Nasdaq 100 Historical Data.csv")
+SP500=read.csv("C:/Users/gpras/Downloads/S&P 500 Historical Data.csv")
+USDIndex=read.csv("C:/Users/gpras/Downloads/US Dollar Index Historical Data.csv") 
+Gold=read.csv("C:/Users/gpras/Downloads/Gold Futures Historical Data (1).csv")
+Silver=read.csv("C:/Users/gpras/Downloads/Silver Futures Historical Data (1).csv")
+US10Y=read.csv("C:/Users/gpras/Downloads/United States 10-Year Bond Yield Historical Data.csv")
+CrudeoilWTI=read.csv("C:/Users/gpras/Downloads/Crude Oil WTI Futures Historical Data.csv")
+NaturalGas=read.csv("C:/Users/gpras/Downloads/Natural Gas Futures Historical Data.csv")
+
+Nasdaq$Date <- as.Date(Nasdaq$Date, format = "%m/%d/%Y")
+SP500$Date <- as.Date(SP500$Date, format = "%m/%d/%Y")
+SP500 <- subset(SP500, select = -Vol.)
+USDIndex$Date <- as.Date(USDIndex$Date, format = "%m/%d/%Y")
+USDIndex <- subset(USDIndex, select = -Vol.)
+Gold$Date <- as.Date(Gold$Date, format = "%m/%d/%Y")
+Gold <- subset(Gold, select = -Vol.)
+Silver$Date <- as.Date(Silver$Date, format = "%m/%d/%Y")
+Silver <- subset(Silver, select = -Vol.)
+CrudeoilWTI$Date <- as.Date(CrudeoilWTI$Date, format = "%m/%d/%Y")
+CrudeoilWTI <- subset(CrudeoilWTI, select = -Vol.)
+NaturalGas$Date <- as.Date(NaturalGas$Date, format = "%m/%d/%Y")
+NaturalGas<- subset(NaturalGas, select = -Vol.)
+US10Y$Date <- as.Date(US10Y$Date, format = "%m/%d/%Y")
+
+Nasdaq=Nasdaq[rev(1:nrow(Nasdaq)), ]
+SP500=SP500[rev(1:nrow(SP500)), ]
+USDIndex=USDIndex[rev(1:nrow(USDIndex)), ]
+Gold=Gold[rev(1:nrow(Gold)), ]
+Silver=Silver[rev(1:nrow(Silver)), ]
+US10Y=US10Y[rev(1:nrow(US10Y)), ]
+CrudeoilWTI=CrudeoilWTI[rev(1:nrow(CrudeoilWTI)), ]
+NaturalGas=NaturalGas[rev(1:nrow(NaturalGas)), ]
+
+SP500$Price <- as.numeric(gsub(",", "", SP500$Price))
+Nasdaq$Price <- as.numeric(gsub(",", "", Nasdaq$Price))
+Gold$Price <- as.numeric(gsub(",", "", Gold$Price))
+Silver$Price <- as.numeric(gsub(",", "", Silver$Price))
+US10Y$Price <- as.numeric(gsub(",", "", US10Y))
+NaturalGas$Price <- as.numeric(gsub(",", "", NaturalGas))
+
+Nasdaq$Vol. <- gsub("[,M]", "", Nasdaq$Vol.)
+Nasdaq$Vol. <- as.numeric(Nasdaq$Vol.) * 1e6
+missing_values <- sum(is.na(Nasdaq))
+missing_values <- sum(is.na(SP500))
+#just checking if there are any missing values in the data.
+str(Nasdaq)
+str(USDIndex)
+str(SP500)
+str(Gold)
+str(Silver)
+str(CrudeoilWTI)
+str(NaturalGas)
+# Merging the data frames to filter USDIndex by Nasdaq's dates
+Gold_Silver_merged <- merge(Gold, Silver, by = "Date")
+str(Gold_Silver_merged)
+
+# Now you calculating the correlation 
+Gold_Silver_correlation <- cor(Gold_Silver_merged$Price.x, Gold_Silver_merged$Price.y)
+print(Gold_Silver_correlation)
+#correlation between USDIndex and Nasdaq
+Price_Volume_relation <-cor(Nasdaq$Price,Nasdaq$Vol.)
+print(Price_Volume_relation)
+#I want to see the plot of price, volume and date
+
+library(ggplot2)
+ggplot(merge_Nasdaq_USDIndex, aes(x = Price.x, y = Price.y)) +
+  geom_line() +
+  labs(
+    title = "Scatter Plot: Nasdaq vs. USD Index",
+    x = "Nasdaq",
+    y = "USD Index"
+  ) +
+  theme_minimal()
+```
+
+```{r}
+library(ggplot2)
+
+ggplot() +
+  geom_line(data = Gold, aes(x = Date, y = Price, color = "Gold"), size = 0.25) +
+  geom_line(data = Silver, aes(x = Date, y = Price, color = "Silver"), size = 0.25) +
+  labs(
+    title = "Gold and Silver",
+    x = "Date",
+    y = "Price",
+    color = "Index"
+  ) +
+  scale_color_manual(
+    values = c("Gold" = "blue", "Silver" = "red"),
+    labels = c("Gold", "Silver")
+  ) +
+  theme_minimal()
+
+```
+
+# Create a plot with Nasdaq Price and Volume on different y-axis scales
+```{r}
+
+
+```
+
+
+
+```{r}
+library(ggplot2)
+
+ggplot() +
+  geom_line(data = CrudeoilWTI, aes(x = Date, y = Price, color = "Crudeoil"), size = 0.25) +
+  geom_line(data = NaturalGas, aes(x = Date, y = Price, color = "NaturalGas"), size = 0.25) +
+  labs(
+    title = "Crudeoil and NaturalGas",
+    x = "Date",
+    y = "Price",
+    color = "Index"
+  ) +
+  scale_color_manual(
+    values = c("Crudeoil" = "blue", "NaturalGas" = "red"),
+    labels = c("Crudeoil", "NaturalGas")
+  ) +
+  theme_minimal()
+
+
+```
+
+```{r}
+
+library(ggplot2)
+
+
+start_date <- as.Date("2020-01-01")
+end_date <- as.Date("2020-12-31")
+
+
+y_limits <- c(2000,20000) 
+
+Nasdaq$Normalized_Volume <- Nasdaq$Vol. / max(Nasdaq$Vol., na.rm = TRUE)
+gg <- ggplot(Nasdaq, aes(x = Date)) +
+  geom_line(aes(y = Price, color = "Price")) +
+  geom_line(aes(y = Normalized_Volume * diff(y_limits) + min(y_limits), color = "Normalized Volume")) +
+  labs(
+    title = "Nasdaq Price and Normalized Volume Over Time",
+    x = "Date",
+    y = "Value",
+    color = "Legend"
+  ) +
+  scale_color_manual(values = c("Price" = "blue", "Normalized Volume" = "red")) +
+  theme_minimal() +
+  xlim(start_date, end_date) + 
+  ylim(y_limits)  
+
+# Print the plot
+print(gg)
+
+
+```
+
+```{r}
+C <- ggplot(data = CrudeoilWTI, aes(x = Date, y = Price)) +
+  geom_point() +
+  labs(title = "Crude Oil Price Scatter Plot",
+       x = "Date",
+       y = "Price") 
+C
+```
+

@@ -1,0 +1,6 @@
+"0","C <- ggplot(data = CrudeoilWTI, aes(x = Date, y = Price)) +"
+"0","  geom_point() +"
+"0","  labs(title = ""Crude Oil Price Scatter Plot"","
+"0","       x = ""Date"","
+"0","       y = ""Price"") "
+"0","C"

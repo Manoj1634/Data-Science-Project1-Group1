@@ -1,0 +1,125 @@
+---
+title: "Group1 Project1"
+author: "Yasaswitha"
+date: "2023-10-06"
+output: html_document
+---
+
+```{r}
+US10Y=read.csv("C:/Users/gpras/Downloads/United States 10-Year Bond Yield Historical Data.csv")
+Gold=read.csv("C:/Users/gpras/Downloads/Gold Futures Historical Data.csv")
+Silver=read.csv("C:/Users/gpras/Downloads/Silver Futures Historical Data (1).csv")
+Nifty100=read.csv("C:/Users/gpras/Downloads/Nifty 100 Historical Data.csv")
+CrudeoilWTI=read.csv("C:/Users/gpras/Downloads/Crude Oil WTI Futures Historical Data.csv")
+NaturalGas=read.csv("C:/Users/gpras/Downloads/Natural Gas Futures Historical Data.csv")
+Nasdaq=read.csv("C:/Users/gpras/Downloads/Nasdaq 100 Historical Data.csv")
+
+Nasdaq <- as.Date(Nasdaq$Date, format = "%m/%d/%Y")
+US10Y$Date <- as.Date(US10Y$Date, format = "%m/%d/%Y")
+Gold$Date <- as.Date(Gold$Date, format = "%m/%d/%Y")
+Silver$Date <- as.Date(Silver$Date, format = "%m/%d/%Y")
+Nifty100$Date <- as.Date(Nifty100$Date, format = "%m/%d/%Y")
+CrudeoilWTI$Date <- as.Date(CrudeoilWTI$Date, format = "%m/%d/%Y")
+NaturalGas$Date <- as.Date(NaturalGas$Date, format = "%m/%d/%Y")
+
+Gold <- subset(Gold, select = -Vol.)
+Silver <- subset(Silver, select = -Vol.)
+Nifty100 <- subset(Nifty100, select = -Vol.)
+CrudeoilWTI <- subset(CrudeoilWTI, select = -Vol.)
+NaturalGas <- subset(NaturalGas, select = -Vol.)
+
+US10Y=US10Y[rev(1:nrow(US10Y)), ]
+Gold=Gold[rev(1:nrow(Gold)), ]
+Silver=Silver[rev(1:nrow(Silver)), ]
+Nifty100=Nifty100[rev(1:nrow(Nifty100)), ]
+CrudeoilWTI=CrudeoilWTI[rev(1:nrow(CrudeoilWTI)), ]
+NaturalGas=NaturalGas[rev(1:nrow(NaturalGas)), ]
+
+
+US10Y$Price <- as.numeric(gsub(",", "", US10Y))
+NaturalGas$Price <- as.numeric(gsub(",", "", NaturalGas))
+Nasdaq$Price <- as.numeric(gsub(",", "", Nasdaq))
+
+US10Y <- US10Y[!duplicated(US10Y), ]
+Gold <- Gold[!duplicated(Gold), ]
+Silver <- Silver[!duplicated(Silver), ]
+Nifty100 <- Nifty100[!duplicated(Nifty100), ]
+CrudeoilWTI <- CrudeoilWTI[!duplicated(CrudeoilWTI), ]
+NaturalGas <- NaturalGas[!duplicated(NaturalGas), ]
+
+
+
+str(US10Y)
+str(Gold)
+str(Silver)
+str(Nifty100)
+str(CrudeoilWTI)
+str(NaturalGas)
+str(Nasdaq)
+
+```
+
+
+```{r}
+
+
+```
+
+
+```{r}
+C <- ggplot(data = CrudeoilWTI, aes(x = Date, y = Price)) +
+  geom_point() +
+  labs(title = "Crude Oil Price Scatter Plot",
+       x = "Date",
+       y = "Price") 
+C
+```
+```{r}
+
+```
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+write.csv(US10Y, file = "C:/Users/gpras/Downloads/DATA us10yNewData.csv", row.names = FALSE)
+write.csv(Gold, file = "C:/Users/gpras/Downloads/DATA goldNewData.csv", row.names = FALSE)
+write.csv(Silver, file = "C:/Users/gpras/Downloads/DATA silverNewData.csv", row.names = FALSE)
+write.csv(Nifty100, file = "C:/Users/gpras/Downloads/DATA nifty100NewData.csv", row.names = FALSE)
+write.csv(CrudeoilWTI, file = "C:/Users/gpras/Downloads/DATA crudeoilNewData.csv", row.names = FALSE)
+write.csv(NaturalGas, file = "C:/Users/gpras/Downloads/DATA NaturalgasNewData.csv", row.names = FALSE)
+```
+
+```{r}
+library(dplyr)
+
+
+# Merge the datasets using a common column (e.g., Date)
+GoldSilver_merged <- merge(Gold, Silver, by = "Date")
+GoldSilver_merged
+
+# Calculate the correlation
+correlation_coefficient <- cor(GoldSilver_merged$Gold, GoldSilver_merged$Silver)
+
+
+
+
+
+```
+
+
