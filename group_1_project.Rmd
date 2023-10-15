@@ -1,0 +1,845 @@
+---
+title: "Intro to Data Science - Group1 Project1"
+author: "Manoj"
+date: "2023-10-06"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+#Question1
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r}
+Nasdaq=read.csv("/Users/manojpadala/Desktop/Intro to data Science/Nasdaq 100 Historical Data.csv")
+SP500=read.csv("/Users/manojpadala/Desktop/Intro to data Science/S&P 500 Historical Data.csv")
+USDIndex=read.csv("/Users/manojpadala/Desktop/Intro to data Science/US Dollar Index Historical Data.csv") 
+
+Nasdaq$Date <- as.Date(Nasdaq$Date, format = "%m/%d/%Y")
+#changing the date format
+SP500$Date <- as.Date(SP500$Date, format = "%m/%d/%Y")
+SP500 <- subset(SP500, select = -Vol.)
+USDIndex$Date <- as.Date(USDIndex$Date, format = "%m/%d/%Y")
+USDIndex <- subset(USDIndex, select = -Vol.)
+Nasdaq=Nasdaq[rev(1:nrow(Nasdaq)), ]
+SP500=SP500[rev(1:nrow(SP500)), ]
+USDIndex=USDIndex[rev(1:nrow(USDIndex)), ]
+SP500$Price <- as.numeric(gsub(",", "", SP500$Price))
+Nasdaq$Price <- as.numeric(gsub(",", "", Nasdaq$Price))
+Nasdaq$Vol. <- gsub("[,M]", "", Nasdaq$Vol.)
+Nasdaq$Vol. <- as.numeric(Nasdaq$Vol.) * 1e6
+missing_values <- sum(is.na(Nasdaq))
+missing_values <- sum(is.na(SP500))
+#just checking if there are any missing values in the data.
+str(Nasdaq)
+str(USDIndex)
+str(SP500)
+# Merging the data frames to filter USDIndex by Nasdaq's dates
+merge_Nasdaq_USDIndex <- merge(Nasdaq, USDIndex, by = "Date")
+str(merge_Nasdaq_USDIndex)
+
+# Now you calculating the correlation 
+Nasdaq_USDIndex_correlation <- cor(merge_Nasdaq_USDIndex$Price.x, merge_Nasdaq_USDIndex$Price.y)
+print(Nasdaq_USDIndex_correlation)
+#correlation between USDIndex and Nasdaq
+Price_Volume_relation <-cor(Nasdaq$Price,Nasdaq$Vol.)
+print(Price_Volume_relation)
+#I want to see the plot of price, volume and date
+
+library(ggplot2)
+ggplot2(merge_Nasdaq_USDIndex, aes(x = Price.x, y = Price.y)) +
+  geom_line() +
+  labs(
+    title = "Scatter Plot: Nasdaq vs. USD Index",
+    x = "Nasdaq",
+    y = "USD Index"
+  ) +
+  theme_minimal()
+```
+
+```{r}
+library(ggplot2)
+ggplot() +
+  geom_line(data = Nasdaq, aes(x = Date, y = Price, color = "Nasdaq"), size = 0.25) +
+  geom_line(data = SP500, aes(x = Date, y = Price, color = "S&P 500"), size = 0.25) +
+  labs(
+    title = "Nasdaq and S&P 500 Comparison",
+    x = "Date",
+    y = "Price",
+    color = "Index"
+  ) +
+  scale_color_manual(values = c("Nasdaq" = "blue", "S&P 500" = "red")) +
+  theme_minimal()'-
+```
+install.packages("ggplot2")
+library(ggplot2)
+# Install and load ggplot2 if you haven't already
+install.packages("ggplot2")
+library(ggplot2)
+
+# Create a plot with Price, Volume, and Date
+ggplot(Nasdaq, aes(x = Date)) +
+  geom_line(aes(y = Price, color = "Price")) +
+  geom_line(aes(y = Vol. / 1e6, color = "Volume (Million)")) +
+  labs(
+    title = "Nasdaq Price and Volume Over Time",
+    x = "Date",
+    y = "Value",
+    color = "Legend"
+  ) +
+  scale_color_manual(values = c("Price" = "blue", "Volume (Million)" = "red")) +
+  theme_minimal()
+
+install.packages("ggplot2")
+library(ggplot2)
+
+# Define the start and end date for the range you want to display
+start_date <- as.Date("2008-01-01")
+end_date <- as.Date("2010-12-31")  # Adjust this to your desired end date
+
+# Create a plot with Price, Volume, and Date, limiting the x-axis range
+# Install and load ggplot2 if you haven't already
+install.packages("ggplot2")
+library(ggplot2)
+
+# Define the start and end date for the range you want to display
+start_date <- as.Date("2008-01-01")
+end_date <- as.Date("2010-12-31")  # Adjust this to your desired end date
+
+# Create a plot with Nasdaq Price and Volume on different y-axis scales
+```{r}
+
+library(ggplot2)
+start_date <- as.Date("2019-01-01")
+end_date <- as.Date("2019-12-31")
+y_limits <- c(2000, 10000)
+
+# Create a plot with Nasdaq Price and Volume on different y-axis scales
+pricevsvol.plot=
+ggplot(Nasdaq, aes(x = Date)) +
+  geom_line(aes(y = Price, color = "Price")) +
+  geom_line(aes(y = Vol. / 30000, color = "Volume (Thousands)")) +
+  labs(
+    title = "Nasdaq Price and Volume Over Time",
+    x = "Date",
+    y = "Value",
+    color = "Legend"
+  ) +
+  scale_color_manual(values = c("Price" = "blue", "Volume (Thousands)" = "red")) +
+  theme_minimal() + xlim(start_date,end_date) + ylim(y_limits) # Set the x-axis range
+pricevsvol.plot
+
+```
+
+
+
+```{r}
+# Create a scatter plot
+plot=
+ggplot() +
+  geom_line(data = Nasdaq, aes(x = Nasdaq$Price, y = SP500$Price), size = .25) +
+  labs(
+    title = "Nasdaq vs. S&P 500",
+    x = "Nasdaq",
+    y = "S&P 500"
+  ) +
+  theme_minimal()
+  plot + scale_x_continuous(limits = c(1000, 12000))
+
+
+```
+
+```{r}
+
+library(ggplot2)
+
+
+start_date <- as.Date("2020-01-01")
+end_date <- as.Date("2020-12-31")
+
+
+y_limits <- c(2000,20000) 
+
+Nasdaq$Normalized_Volume <- Nasdaq$Vol. / max(Nasdaq$Vol., na.rm = TRUE)
+gg <- ggplot(Nasdaq, aes(x = Date)) +
+  geom_line(aes(y = Price, color = "Price")) +
+  geom_line(aes(y = Normalized_Volume * diff(y_limits) + min(y_limits), color = "Normalized Volume")) +
+  labs(
+    title = "Nasdaq Price and Normalized Volume Over Time",
+    x = "Date",
+    y = "Value",
+    color = "Legend"
+  ) +
+  scale_color_manual(values = c("Price" = "blue", "Normalized Volume" = "red")) +
+  theme_minimal() +
+  xlim(start_date, end_date) + 
+  ylim(y_limits)  
+
+# Print the plot
+print(gg)
+
+
+```
+
+
+#Question 1 done
+# Questiuon 2
+Fed interest rates
+LIBOR Index
+10Year US Bond yield
+SOFR
+Nasdaq
+
+
+
+
+
+
+
+
+#Question3
+#What is the relationship between the performance of the Indian stock market, US stock market, Europe stock market, China stock market, japan stock market, Singapore stock market  and the US bonds , and how has this relationship evolved over the 15 years
+
+US10Yearbond=read.csv("United States 10-Year Bond Yield Historical Data.csv")
+
+
+
+
+
+str(Nasdaq)
+
+str(US10Yearbond)
+
+#India
+India.Index=read.csv("Nifty 50 Historical Data.csv")
+India.Index$Date <- as.Date(India.Index$Date, format = "%m/%d/%Y")
+India.Index=India.Index[rev(1:nrow(India.Index)), ]
+India.Index$Price <- as.numeric(gsub(",", "", India.Index$Price))
+str(India.Index)
+
+#UK
+UK.Index = read.csv("FTSE 100 Historical Data.csv")
+UK.Index$Date <- as.Date(UK.Index$Date, format = "%m/%d/%Y")
+UK.Index=UK.Index[rev(1:nrow(UK.Index)), ]
+UK.Index$Price <- as.numeric(gsub(",", "", UK.Index$Price))
+str(UK.Index)
+
+#Singapore
+Singapore.Index = read.csv("FTSE Straits Times Singapore Historical Data.csv")
+Singapore.Index$Date <- as.Date(Singapore.Index$Date, format = "%m/%d/%Y")
+Singapore.Index=Singapore.Index[rev(1:nrow(Singapore.Index)), ]
+Singapore.Index$Price <- as.numeric(gsub(",", "", Singapore.Index$Price))
+Singapore.Index <- subset(Singapore.Index, select = -Vol.)
+str(Singapore.Index)
+
+#russia
+Russia.Index= read.csv("MOEX Russia Historical Data.csv")
+Russia.Index$Date <- as.Date(Russia.Index$Date, format = "%m/%d/%Y")
+Russia.Index=Russia.Index[rev(1:nrow(Russia.Index)), ]
+Russia.Index$Price <- as.numeric(gsub(",", "", Russia.Index$Price))
+Russia.Index <- subset(Russia.Index, select = -Vol.)
+str(Russia.Index)
+
+#china
+China.Index= read.csv("Shanghai Composite Historical Data.csv")
+China.Index$Date <- as.Date(China.Index$Date, format = "%m/%d/%Y")
+China.Index=China.Index[rev(1:nrow(China.Index)), ]
+China.Index$Price <- as.numeric(gsub(",", "", China.Index$Price))
+str(China.Index)
+
+#Japan
+Japan.Index= read.csv("Nikkei 225 Historical Data.csv")
+Japan.Index$Date <- as.Date(Japan.Index$Date, format = "%m/%d/%Y")
+Japan.Index=Japan.Index[rev(1:nrow(Japan.Index)), ]
+Japan.Index$Price <- as.numeric(gsub(",", "", Japan.Index$Price))
+str(Japan.Index)
+
+#US10yearbond
+US10Yearbond=read.csv("United States 10-Year Bond Yield Historical Data.csv")
+US10Yearbond$Date <- as.Date(US10Yearbond$Date, format = "%m/%d/%Y")
+US10Yearbond=US10Yearbond[rev(1:nrow(US10Yearbond)), ]
+str(US10Yearbond)
+str(Nasdaq)
+----
+#USA and US10year bond
+merge_Nasdaq_USB <- merge(Nasdaq, US10Yearbond, by = "Date")
+correlation_Nasdaq_USB <- cor(merge_Nasdaq_USB$Price.x,merge_Nasdaq_USB$Price.y)
+correlation_Nasdaq_USB
+#Correlation between USA index and US10year bond -0.271183
+```{r}
+#scatterplot between USA index and US10year bond
+library(ggplot2)
+Nasdaq_USB_plot <-
+ggplot(merge_Nasdaq_USB, aes(x = Price.x, y = Price.y)) +
+  geom_line() +
+  labs(
+    title = "Scatter Plot: USA index vs US10year bond",
+    x = "Nasdaq",
+    y = " US10Yearbond"
+  ) +
+  theme_minimal()
+Nasdaq_USB_plot
+```
+
+```{r}
+#USA index vs US10year bond over time plot
+library(ggplot2)
+library(gridExtra)
+
+plot_nasdaq <- ggplot(data = merge_Nasdaq_USB, aes(x = Date)) +
+  geom_line(aes(y = Price.x, color = "Nasdaq")) +
+  labs(x = "Date", y = "Price") +
+  scale_color_manual(values = c("Nasdaq" = "blue")) +
+  ggtitle("Nasdaq Index Price")
+plot_USBond <- ggplot(data = merge_Nasdaq_USB, aes(x = Date)) +
+  geom_line(aes(y = Price.y, color = "US Bond")) +
+  labs(x = "Date", y = "Price") +
+  scale_color_manual(values = c("US Bond" = "red")) +
+  ggtitle("US10 year bond")
+grid.arrange(plot_nasdaq, plot_USBond, ncol = 2)
+```
+```{r}
+#within a particular period
+start_date <- as.Date("2021-01-01")
+end_date <- as.Date("2023-12-31")
+y_limits <- c(10000, 19000)
+#USA index vs US10year bond over time plot
+library(ggplot2)
+library(gridExtra)
+
+plot_nasdaq <- ggplot(data = merge_Nasdaq_USB, aes(x = Date)) +
+  geom_line(aes(y = Price.x, color = "Nasdaq")) +
+  labs(x = "Date", y = "Price") + xlim(start_date,end_date) + ylim(y_limits)+
+  scale_color_manual(values = c("Nasdaq" = "blue")) +
+  ggtitle("Nasdaq Index Price")
+plot_USBond <- ggplot(data = merge_Nasdaq_USB, aes(x = Date)) +
+  geom_line(aes(y = Price.y, color = "US Bond")) +
+  labs(x = "Date", y = "Price") + xlim(start_date,end_date) +
+  scale_color_manual(values = c("US Bond" = "red")) +
+  ggtitle("US10 year bond")
+grid.arrange(plot_nasdaq, plot_USBond, ncol = 2)
+```
+
+
+
+
+
+
+
+
+
+#India vs USA
+merge_Nasdaq_India <- merge(Nasdaq, India.Index, by = "Date")
+correlation_IndiaUSA <- cor(merge_Nasdaq_India$Price.x,merge_Nasdaq_India$Price.y)
+correlation_IndiaUSA
+str(merge_Nasdaq_India)
+str(India.Index)
+str(Nasdaq)
+#correlation between India and USA is 0.9643381
+```{r}
+#scatterplot between India Index and USA Index
+library(ggplot2)
+India_USA_plot <-
+ggplot(merge_Nasdaq_India, aes(x = Price.x, y = Price.y)) +
+  geom_point() +
+  labs(
+    title = "Scatter Plot: Nasdaq vs. Nifty50",
+    x = "Nasdaq",
+    y = "India"
+  ) +
+  theme_minimal()
+India_USA_plot
+```
+#Nifty 50 and Nasdaq over time Plot
+```{r}
+
+library(ggplot2)
+
+ggplot() +
+  geom_line(data = Nasdaq, aes(x = Date, y = Price, color = "Nasdaq"), size = 0.5) +
+  geom_line(data = India.Index, aes(x = Date, y = Price, color = "India.Index"), size = 0.5) +
+  labs(
+    title = "Nasdaq and Nifty50(India Index) Comparison",
+    x = "Date",
+    y = "Price",
+    color = "Index"
+  ) +
+  scale_color_manual(values = c("Nasdaq" = "Blue", "India.Index" = "Green")) +
+  theme_minimal()
+```
+#Nifty 50 and Nasdaq over time Plot
+
+#Uk vs USA
+str(UK.Index)
+str(Nasdaq)
+merge_Nasdaq_UK <- merge(Nasdaq, UK.Index, by = "Date")
+str(merge_Nasdaq_UK)
+correlation_UKUSA <- cor(merge_Nasdaq_UK$Price.x,merge_Nasdaq_UK$Price.y)
+correlation_UKUSA
+#correlation between Uk and USA is just 0.657
+```{r}
+#scatterplot between India Index and USA Index
+library(ggplot2)
+UK_USA_plot <-
+ggplot(merge_Nasdaq_UK, aes(x = Price.x, y = Price.y)) +
+  geom_line() +
+  labs(
+    title = "Scatter Plot: Nasdaq vs. UK Index(FTSE)",
+    x = "Nasdaq",
+    y = "UK Index (FTSE)"
+  ) +
+  theme_minimal()
+UK_USA_plot
+```
+```{r}
+UKIndexandNasdaqovertimePlot <-
+ggplot() +
+  geom_line(data = Nasdaq, aes(x = Date, y = Price, color = "Nasdaq"), size = 0.5) +
+  geom_line(data = UK.Index, aes(x = Date, y = Price, color = "UK.Index"), size = 0.5) +
+  labs(
+    title = "Nasdaq and FTSE100(UK Index) Comparison",
+    x = "Date",
+    y = "Price",
+    color = "Index"
+  ) +
+  scale_color_manual(values = c("Nasdaq" = "Blue", "UK.Index" = "Red")) +
+  theme_minimal()
+UKIndexandNasdaqovertimePlot
+#UK Index and Nasdaq over time Plot
+```
+ 
+ 
+ 
+ 
+# USA vs Russia
+```{r}
+merge_Nasdaq_Russia <- merge(Nasdaq, Russia.Index, by = "Date")
+correlation_USA_Russia <- cor(merge_Nasdaq_Russia$Price.x,merge_Nasdaq_Russia$Price.y)
+correlation_USA_Russia
+
+
+```
+```{r}
+# Scattler plot between Russia Index and USA Index
+Scatter_Nasdaq_Russia_plot <-
+ggplot(merge_Nasdaq_Russia, aes(x = Price.x, y = Price.y)) +
+  geom_line() +
+  labs(
+    title = "Scatter Plot: Nasdaq vs Russia",
+    x = "US Index",
+    y = "Russia Index"
+  ) +
+  theme_minimal()
+Scatter_Nasdaq_Russia_plot
+```
+
+
+```{r}
+
+# over timeplot between USA and Russia
+library(ggplot2)
+
+ggplot() +
+  geom_line(data = Nasdaq, aes(x = Date, y = Price, color = "Nasdaq"), size = 0.5) +
+  geom_line(data = Russia.Index, aes(x = Date, y = Price, color = "Russia.Index"), size = 0.5) +
+  labs(
+    title = "Nasdaq and Russia Index Comparison",
+    x = "Date",
+    y = "Price",
+    color = "Index"
+  ) +
+  scale_color_manual(values = c("Nasdaq" = "Blue", "Russia.Index" = "Red")) +
+  theme_minimal()
+```
+
+
+
+
+
+
+
+
+#Singapore vs USA
+
+str(UK.Index)
+str(Nasdaq)
+merge_Nasdaq_Singapore <- merge(Nasdaq, Singapore.Index, by = "Date")
+str(merge_Nasdaq_Singapore)
+correlation_USA_Singapore <- cor(merge_Nasdaq_Singapore$Price.x,merge_Nasdaq_Singapore$Price.y)
+correlation_USA_Singapore
+#correlation between Singapore vs USA is just 0.209974
+```{r}
+#scatterplot between India Index and USA Index
+library(ggplot2)
+Singapore_USA_plot <-
+ggplot(merge_Nasdaq_Singapore, aes(x = Price.x, y = Price.y)) +
+  geom_line() +
+  labs(
+    title = "Scatter Plot: Singapore vs USA",
+    x = "Nasdaq",
+    y = "Singapore Index"
+  ) +
+  theme_minimal()
+Singapore_USA_plot
+```
+```{r}
+SingaporeandNasdaqovertimePlot <-
+ggplot() +
+  geom_line(data = Nasdaq, aes(x = Date, y = Price, color = "Nasdaq"), size = 0.5) +
+  geom_line(data = Singapore.Index, aes(x = Date, y = Price, color = "Singapore.Index"), size = 0.5) +
+  labs(
+    title = "Nasdaq and Singapore Index Comparison",
+    x = "Date",
+    y = "Price",
+    color = "Index"
+  ) +
+  scale_color_manual(values = c("Nasdaq" = "Blue", "Singapore.Index" = "Purple")) +
+  theme_minimal()
+SingaporeandNasdaqovertimePlot
+#Nasdaq and Singapore Index over time Plot
+```
+
+
+
+
+
+#India vs UK
+
+```{r}
+merged_India_UK= merge(India.Index, UK.Index, by = "Date")
+correlation_IndiaUK <- cor(merged_India_UK$Price.x,merged_India_UK$Price.y)
+correlation_IndiaUK
+#scatterplot between India Index and UK Index
+library(ggplot2)
+IndiaEurope_plot <-
+ggplot(merged_India_UK, aes(x = Price.x, y = Price.y)) +
+  geom_line() +
+  labs(
+    title = "Scatter Plot: India vs UK",
+    x = "India Index",
+    y = "UK Index"
+  ) +
+  theme_minimal()
+IndiaEurope_plot
+
+#Correlation between India Index and Europe Index is  0.7545764
+
+IndiaEuropeovertimePlot <-
+ggplot() +
+  geom_line(data = India.Index, aes(x = Date, y = Price, color = "India Index"), size = 0.5) +
+  geom_line(data = UK.Index, aes(x = Date, y = Price, color = "UK.Index"), size = 0.5) +
+  labs(
+    title = "India and UK Index Comparison Over Time",
+    x = "Date",
+    y = "Price",
+    color = "Index"
+  ) +
+  scale_color_manual(values = c("India Index" = "Blue", "UK.Index" = "Green")) +
+  theme_minimal()
+IndiaEuropeovertimePlot
+#India and UK Index over time Plot
+```
+
+
+
+
+
+
+
+#India vs Singapore
+merged_India_Singapore= merge(India.Index, Singapore.Index, by = "Date")
+correlation_India_Singapore <- cor(merged_India_Singapore$Price.x,merged_India_Singapore$Price.y)
+correlation_India_Singapore
+```{r}
+
+#scatterplot between India Index and UK Index
+library(ggplot2)
+IndiaSingapore_plot <-
+ggplot(merged_India_Singapore, aes(x = Price.x, y = Price.y)) +
+  geom_line() +
+  labs(
+    title = "Scatter Plot: India vs Singapore",
+    x = "India Index",
+    y = "SIngapore Index"
+  ) +
+  theme_minimal()
+IndiaSingapore_plot
+
+#Correlation between India Index and Singapore Index is 0.3059829
+
+IndiaSingaporeovertimePlot <- ggplot() +
+  geom_line(data = India.Index, aes(x = Date, y = Price, color = "India Index"), size = 0.5) +
+  geom_line(data = Singapore.Index, aes(x = Date, y = Price, color = "Singapore Index"), size = 0.5) +
+  labs(
+    title = "India and Singapore Index Comparison Over Time",
+    x = "Date",
+    y = "Price",
+    color = "Index"
+  ) +
+  scale_color_manual(values = c("India Index" = "Blue", "Singapore Index" = "Black")) +
+  theme_minimal()
+
+print(IndiaSingaporeovertimePlot)
+```
+
+```{r}
+#Overtimeplots for all indexes
+overtimePlot <- ggplot() +
+  geom_line(data = India.Index, aes(x = Date, y = Price, color = "India Index"), size = 0.5) +
+  geom_line(data = UK.Index, aes(x = Date, y = Price, color = "UK Index"), size = 0.5) +
+  geom_line(data = Nasdaq, aes(x = Date, y = Price, color = "US Index"), size = 0.5)+
+  geom_line(data = Singapore.Index, aes(x = Date, y = Price, color = "Singapore Index"), size = 0.5)+
+  geom_line(data = Russia.Index, aes(x = Date, y = Price, color = "Russia Index"), size = 0.5)
+  
+  
+  labs(
+    title = "Comparision of Various Countries Indexes Over Time",
+    x = "Date",
+    y = "Price",
+    color = "Index"
+  ) +
+  scale_color_manual(values = c("India Index" = "Green", "UK Index" = "Blue","US Index"= "Red", "Singapore Index" = "black","Russia Index" = "Black")) +
+  theme_minimal()
+
+overtimePlot
+```
+
+#question3
+#BTC
+BTC.Index=read.csv("BTC_USD Bitfinex Historical Data.csv")
+BTC.Index$Date <- as.Date(BTC.Index$Date, format = "%m/%d/%Y")
+BTC.Index=BTC.Index[rev(1:nrow(BTC.Index)), ]
+BTC.Index$Price <- as.numeric(gsub(",", "", BTC.Index$Price))
+str(BTC.Index)
+# Ethereum
+ETH.Index=read.csv("Ethereum Historical Data.csv")
+ETH.Index$Date <- as.Date(ETH.Index$Date, format = "%m/%d/%Y")
+ETH.Index=ETH.Index[rev(1:nrow(ETH.Index)), ]
+ETH.Index$Price <- as.numeric(gsub(",", "", ETH.Index$Price))
+str(ETH.Index)
+# Crypto10 Index
+CR10.Index=read.csv("crypto10index.csv")
+CR10.Index$Date <- as.Date(CR10.Index$Date, format = "%m/%d/%Y")
+CR10.Index=CR10.Index[rev(1:nrow(CR10.Index)), ]
+CR10.Index$Price <- as.numeric(gsub(",", "", CR10.Index$Price))
+str(CR10.Index)
+
+#correlation factor between crypto10 index and Bitcoin is 0.752
+merged_BTC_Cryto10= merge(BTC.Index, CR10.Index, by = "Date")
+correlation_BTC_Cryto10 <- cor(merged_BTC_Cryto10$Price.x,merged_BTC_Cryto10$Price.y)
+correlation_BTC_Cryto10
+
+#correlation factor between crypto10 index and Ethereum is 0.3244
+merged_ETH_Cryto10= merge(ETH.Index, CR10.Index, by = "Date")
+correlation_ETH_Cryto10 <- cor(merged_ETH_Cryto10$Price.x,merged_ETH_Cryto10$Price.y)
+correlation_ETH_Cryto10
+
+
+#correlation factor between Nasdaq and Bitcoin is 0.90
+merged_BTC_Nasdaq= merge(BTC.Index, Nasdaq, by = "Date")
+correlation_BTC_Nasdaq <- cor(merged_BTC_Nasdaq$Price.x,merged_BTC_Nasdaq$Price.y)
+correlation_BTC_Nasdaq
+
+
+
+#correlation factor between Nasdaq and Crypto 10 index is 0.29
+merged_CR10_Nasdaq= merge(CR10.Index, Nasdaq, by = "Date")
+correlation_CR10_Nasdaq <- cor(merged_CR10_Nasdaq$Price.x,merged_CR10_Nasdaq$Price.y)
+correlation_CR10_Nasdaq
+
+#correlation factor between Nasdaq and Etherium index is 0.85
+merged_ETH_Nasdaq= merge(ETH.Index, Nasdaq, by = "Date")
+correlation_ETH_Nasdaq <- cor(merged_ETH_Nasdaq$Price.x,merged_ETH_Nasdaq$Price.y)
+correlation_ETH_Nasdaq
+
+#correlation factor between Bitcoin and Etherium index is 0.936
+merged_ETH_BTC= merge(ETH.Index, BTC.Index, by = "Date")
+correlation_ETH_BTC <- cor(merged_ETH_BTC$Price.x,merged_ETH_BTC$Price.y)
+correlation_ETH_BTC
+
+#scatterplot between crypto10 index and Bitcoin
+library(ggplot2)
+BTC_Cryto10_plot <-
+ggplot(merged_BTC_Cryto10, aes(x = Price.x, y = Price.y)) +
+  geom_point() +
+  labs(
+    title = "Scatter Plot: Bitcoin vs Crypto 10 Index",
+    x = "Bitcoin USD Index",
+    y = "Crypto 10 Index"
+  ) +
+  theme_minimal()
+BTC_Cryto10_plot
+
+#scatterplot between Nasdaq and Bitcoin
+library(ggplot2)
+BTC_Nasdaq_plot <-
+ggplot(merged_BTC_Nasdaq, aes(x = Price.x, y = Price.y)) +
+  geom_line() +
+  labs(
+    title = "Scatter Plot: Bitcoin vs Nasdaq",
+    x = "Bitcoin",
+    y = "Nasdaq"
+  ) +
+  theme_minimal()
+BTC_Nasdaq_plot
+
+```{r}
+#Overtimeplot between crypto10 index, Bitcoin and ethereum
+BTC_Cryto10_ETHovertimePlot <-
+ggplot() +
+  geom_line(data = CR10.Index, aes(x = Date, y = Price, color = "CRYPTO 10 Index"), size = 0.5) +
+  geom_line(data = BTC.Index, aes(x = Date, y = Price, color = "BITCOIN (USD) Index"), size = 0.5) +
+  geom_line(data = ETH.Index, aes(x = Date, y = Price, color = "ETHEREUM (USD) Index"), size = 0.5) +
+  geom_line(data = Nasdaq, aes(x = Date, y = Price, color = "Nasdaq"), size = 0.5) +
+  labs(
+    title = "Crypto Index Comparison Over Time",
+    x = "Date",
+    y = "Price",
+    color = "Index"
+  ) +
+  scale_color_manual(values = c("CRYPTO 10 Index" = "Blue", "BITCOIN (USD) Index" = "Green", "ETHEREUM (USD) Index"="Red", "Nasdaq"="Yellow")) +
+  theme_minimal()
+BTC_Cryto10_ETHovertimePlot 
+```
+
+```{r}
+start_date <- as.Date("2020-01-01")
+end_date <- as.Date("2023-12-31")
+plot_eth_btc <- ggplot() +
+  geom_line(data = BTC.Index, aes(x = Date, y = Price, color = "BITCOIN (USD) Index"), size = 0.5) +
+  geom_line(data = ETH.Index, aes(x = Date, y = Price, color = "ETHEREUM (USD) Index"), size = 0.5)+
+  labs(x = "Date", y = "Price") +
+  scale_color_manual(values = c("BITCOIN (USD) Index" = "Green", "ETHEREUM (USD) Index"="Red")) + xlim(start_date,end_date)+
+  ggtitle("Bitcoin and Etherium Price")
+plot_crpto10 <- ggplot() +
+  geom_line(data = CR10.Index, aes(x = Date, y = Price, color = "CRYPTO 10 Index"), size = 0.5) +
+  labs(x = "Date", y = "Price") +
+  scale_color_manual(values = c("CRYPTO 10 Index" = "Blue")) + xlim(start_date,end_date)
+  ggtitle("Crypto10 Index")
+grid.arrange(plot_eth_btc, plot_crpto10, ncol = 2)
+plot(grid.arrange(plot_eth_btc, plot_crpto10, ncol = 2))
+```
+
+
+#Gold
+Gold.Index= read.csv("Gold Futures Historical Data.csv")
+Gold.Index$Date <- as.Date(Gold.Index$Date, format = "%m/%d/%Y")
+Gold.Index=Gold.Index[rev(1:nrow(Gold.Index)), ]
+Gold.Index$Price <- as.numeric(gsub(",", "", Gold.Index$Price))
+str(Gold.Index)
+#Silver
+Silver.Index= read.csv("Silver Futures Historical Data.csv")
+Silver.Index$Date <- as.Date(Silver.Index$Date, format = "%m/%d/%Y")
+Silver.Index=Silver.Index[rev(1:nrow(Silver.Index)), ]
+Silver.Index$Price <- as.numeric(gsub(",", "", Silver.Index$Price))
+str(Silver.Index)
+#NaturalGas
+Naturalgas.Index= read.csv("Natural Gas Futures Historical Data.csv")
+Naturalgas.Index$Date <- as.Date(Naturalgas.Index$Date, format = "%m/%d/%Y")
+Naturalgas.Index=Naturalgas.Index[rev(1:nrow(Naturalgas.Index)), ]
+Naturalgas.Index$Price <- as.numeric(gsub(",", "", Naturalgas.Index$Price))
+str(Naturalgas.Index)
+#Crudeoil
+Crudeoil.Index= read.csv("Crude Oil WTI Futures Historical Data.csv")
+Crudeoil.Index$Date <- as.Date(Crudeoil.Index$Date, format = "%m/%d/%Y")
+Crudeoil.Index=Crudeoil.Index[rev(1:nrow(Crudeoil.Index)), ]
+Crudeoil.Index$Price <- as.numeric(gsub(",", "", Crudeoil.Index$Price))
+str(Crudeoil.Index)
+```{r}
+#Gold and Silver
+#correlation between Gold and Silver is 0.65
+merged_Gold_Silver= merge(Gold.Index, Silver.Index, by = "Date")
+correlation_Gold_Silver <- cor(merged_Gold_Silver$Price.x,merged_Gold_Silver$Price.y)
+correlation_Gold_Silver
+#scatterplot between Gold and Silver
+library(ggplot2)
+Gold_Silver_plot <-
+ggplot(merged_Gold_Silver, aes(x = Price.x, y = Price.y)) +
+  geom_line() +
+  labs(
+    title = "Scatter Plot: Gold and Silver",
+    x = "Gold",
+    y = "Silver"
+  ) +
+  theme_minimal()
+Gold_Silver_plot
+```
+
+
+
+
+```{r}
+#Natural gas and Crude oil
+#correlation between Natural gas and Crude oil is 0.612
+merged_NG_CO= merge(Naturalgas.Index, Crudeoil.Index, by = "Date")
+correlation_NG_CO <- cor(merged_NG_CO$Price.x,merged_NG_CO$Price.y)
+correlation_NG_CO
+#scatterplot between Natural gas and Crude oil
+library(ggplot2)
+NG_CO_plot <-
+ggplot(merged_NG_CO, aes(x = Price.x, y = Price.y)) +
+  geom_line() +
+  labs(
+    title = "Scatter Plot: Natural gas and Crude oil",
+    x = "Naturalgas",
+    y = "Crudeoil"
+  ) +
+  theme_minimal()
+NG_CO_plot
+```
+
+#Plotting Gold, Silver, Natural gas, Crude oil, Nasdaq together
+
+```{r}
+Commodity_overtimePlot <-
+ggplot() +
+  geom_line(data = Silver.Index, aes(x = Date, y = Price, color = "Silver Index"), size = 0.5) +
+  geom_line(data = Naturalgas.Index, aes(x = Date, y = Price, color = "Natural gas Index"), size = 0.5) +
+  geom_line(data = Crudeoil.Index, aes(x = Date, y = Price, color = "Crudeoil Index"), size = 0.5) +
+  labs(
+    title = "Crypto Index Comparison Over Time",
+    x = "Date",
+    y = "Price",
+    color = "Index"
+  ) +
+  scale_color_manual(values = c("Gold Index" = "Gold", "Silver Index" = "Grey", "Natural gas Index"="Green", "Crudeoil Index"="Orange", "Nasdaq"="Blue")) +
+  theme_minimal()
+Commodity_overtimePlot
+plot_nasdaq_gold <- ggplot() +
+  geom_line(data =Nasdaq, aes(x = Date, y = Price, color = "Nasdaq"), size = 0.5)  +
+  geom_line(data = Gold.Index, aes(x = Date, y = Price, color = "Gold Index"), size = 0.5) +
+  labs(x = "Date", y = "Price") +
+  scale_color_manual(values = c("Nasdaq" = "blue", "Gold Index"="Gold")) +
+  ggtitle("Nasdaq Index Price")
+
+grid.arrange(Commodity_overtimePlot,plot_nasdaq_gold, ncol = 2)
+plot(grid.arrange(Commodity_overtimePlot,plot_nasdaq_gold, ncol = 2))
+```
+
+
+
+# we can calculate outlier here in orange
+
+
+
+
+
+
