@@ -87,7 +87,7 @@ ggplot() +
     color = "Index"
   ) +
   scale_color_manual(values = c("Nasdaq" = "blue", "S&P 500" = "red")) +
-  theme_minimal()'-
+  theme_minimal()
 ```
 install.packages("ggplot2")
 library(ggplot2)
@@ -108,7 +108,6 @@ ggplot(Nasdaq, aes(x = Date)) +
   scale_color_manual(values = c("Price" = "blue", "Volume (Million)" = "red")) +
   theme_minimal()
 
-install.packages("ggplot2")
 library(ggplot2)
 
 # Define the start and end date for the range you want to display
@@ -279,7 +278,7 @@ US10Yearbond=US10Yearbond[rev(1:nrow(US10Yearbond)), ]
 str(US10Yearbond)
 str(Nasdaq)
 ----
-#USA and US10year bond
+#USA stock index and US10year bond
 merge_Nasdaq_USB <- merge(Nasdaq, US10Yearbond, by = "Date")
 correlation_Nasdaq_USB <- cor(merge_Nasdaq_USB$Price.x,merge_Nasdaq_USB$Price.y)
 correlation_Nasdaq_USB
@@ -359,7 +358,7 @@ str(Nasdaq)
 library(ggplot2)
 India_USA_plot <-
 ggplot(merge_Nasdaq_India, aes(x = Price.x, y = Price.y)) +
-  geom_point() +
+  geom_line() +
   labs(
     title = "Scatter Plot: Nasdaq vs. Nifty50",
     x = "Nasdaq",
@@ -570,7 +569,7 @@ correlation_India_Singapore <- cor(merged_India_Singapore$Price.x,merged_India_S
 correlation_India_Singapore
 ```{r}
 
-#scatterplot between India Index and UK Index
+#scatterplot between India Index and Singapore Index
 library(ggplot2)
 IndiaSingapore_plot <-
 ggplot(merged_India_Singapore, aes(x = Price.x, y = Price.y)) +
@@ -622,11 +621,221 @@ overtimePlot <- ggplot() +
 overtimePlot
 ```
 
+#question3
+#BTC
+BTC.Index=read.csv("BTC_USD Bitfinex Historical Data.csv")
+BTC.Index$Date <- as.Date(BTC.Index$Date, format = "%m/%d/%Y")
+BTC.Index=BTC.Index[rev(1:nrow(BTC.Index)), ]
+BTC.Index$Price <- as.numeric(gsub(",", "", BTC.Index$Price))
+str(BTC.Index)
+# Ethereum
+ETH.Index=read.csv("Ethereum Historical Data.csv")
+ETH.Index$Date <- as.Date(ETH.Index$Date, format = "%m/%d/%Y")
+ETH.Index=ETH.Index[rev(1:nrow(ETH.Index)), ]
+ETH.Index$Price <- as.numeric(gsub(",", "", ETH.Index$Price))
+str(ETH.Index)
+# Crypto10 Index
+CR10.Index=read.csv("crypto10index.csv")
+CR10.Index$Date <- as.Date(CR10.Index$Date, format = "%m/%d/%Y")
+CR10.Index=CR10.Index[rev(1:nrow(CR10.Index)), ]
+CR10.Index$Price <- as.numeric(gsub(",", "", CR10.Index$Price))
+str(CR10.Index)
+
+#correlation factor between crypto10 index and Bitcoin is 0.752
+merged_BTC_Cryto10= merge(BTC.Index, CR10.Index, by = "Date")
+correlation_BTC_Cryto10 <- cor(merged_BTC_Cryto10$Price.x,merged_BTC_Cryto10$Price.y)
+correlation_BTC_Cryto10
+
+#correlation factor between crypto10 index and Ethereum is 0.3244
+merged_ETH_Cryto10= merge(ETH.Index, CR10.Index, by = "Date")
+correlation_ETH_Cryto10 <- cor(merged_ETH_Cryto10$Price.x,merged_ETH_Cryto10$Price.y)
+correlation_ETH_Cryto10
+
+
+#correlation factor between Nasdaq and Bitcoin is 0.90
+merged_BTC_Nasdaq= merge(BTC.Index, Nasdaq, by = "Date")
+correlation_BTC_Nasdaq <- cor(merged_BTC_Nasdaq$Price.x,merged_BTC_Nasdaq$Price.y)
+correlation_BTC_Nasdaq
+
+
+
+#correlation factor between Nasdaq and Crypto 10 index is 0.29
+merged_CR10_Nasdaq= merge(CR10.Index, Nasdaq, by = "Date")
+correlation_CR10_Nasdaq <- cor(merged_CR10_Nasdaq$Price.x,merged_CR10_Nasdaq$Price.y)
+correlation_CR10_Nasdaq
+
+#correlation factor between Nasdaq and Etherium index is 0.85
+merged_ETH_Nasdaq= merge(ETH.Index, Nasdaq, by = "Date")
+correlation_ETH_Nasdaq <- cor(merged_ETH_Nasdaq$Price.x,merged_ETH_Nasdaq$Price.y)
+correlation_ETH_Nasdaq
+
+#correlation factor between Bitcoin and Etherium index is 0.936
+merged_ETH_BTC= merge(ETH.Index, BTC.Index, by = "Date")
+correlation_ETH_BTC <- cor(merged_ETH_BTC$Price.x,merged_ETH_BTC$Price.y)
+correlation_ETH_BTC
+
+#scatterplot between crypto10 index and Bitcoin
+library(ggplot2)
+BTC_Cryto10_plot <-
+ggplot(merged_BTC_Cryto10, aes(x = Price.x, y = Price.y)) +
+  geom_point() +
+  labs(
+    title = "Scatter Plot: Bitcoin vs Crypto 10 Index",
+    x = "Bitcoin USD Index",
+    y = "Crypto 10 Index"
+  ) +
+  theme_minimal()
+BTC_Cryto10_plot
+
+#scatterplot between Nasdaq and Bitcoin
+library(ggplot2)
+BTC_Nasdaq_plot <-
+ggplot(merged_BTC_Nasdaq, aes(x = Price.x, y = Price.y)) +
+  geom_line() +
+  labs(
+    title = "Scatter Plot: Bitcoin vs Nasdaq",
+    x = "Bitcoin",
+    y = "Nasdaq"
+  ) +
+  theme_minimal()
+BTC_Nasdaq_plot
+
+```{r}
+#Overtimeplot between crypto10 index, Bitcoin and ethereum
+BTC_Cryto10_ETHovertimePlot <-
+ggplot() +
+  geom_line(data = CR10.Index, aes(x = Date, y = Price, color = "CRYPTO 10 Index"), size = 0.5) +
+  geom_line(data = BTC.Index, aes(x = Date, y = Price, color = "BITCOIN (USD) Index"), size = 0.5) +
+  geom_line(data = ETH.Index, aes(x = Date, y = Price, color = "ETHEREUM (USD) Index"), size = 0.5) +
+  geom_line(data = Nasdaq, aes(x = Date, y = Price, color = "Nasdaq"), size = 0.5) +
+  labs(
+    title = "Crypto Index Comparison Over Time",
+    x = "Date",
+    y = "Price",
+    color = "Index"
+  ) +
+  scale_color_manual(values = c("CRYPTO 10 Index" = "Blue", "BITCOIN (USD) Index" = "Green", "ETHEREUM (USD) Index"="Red", "Nasdaq"="Yellow")) +
+  theme_minimal()
+BTC_Cryto10_ETHovertimePlot 
+```
+
+```{r}
+start_date <- as.Date("2020-01-01")
+end_date <- as.Date("2023-12-31")
+plot_eth_btc <- ggplot() +
+  geom_line(data = BTC.Index, aes(x = Date, y = Price, color = "BITCOIN (USD) Index"), size = 0.5) +
+  geom_line(data = ETH.Index, aes(x = Date, y = Price, color = "ETHEREUM (USD) Index"), size = 0.5)+
+  labs(x = "Date", y = "Price") +
+  scale_color_manual(values = c("BITCOIN (USD) Index" = "Green", "ETHEREUM (USD) Index"="Red")) + xlim(start_date,end_date)+
+  ggtitle("Bitcoin and Etherium Price")
+plot_crpto10 <- ggplot() +
+  geom_line(data = CR10.Index, aes(x = Date, y = Price, color = "CRYPTO 10 Index"), size = 0.5) +
+  labs(x = "Date", y = "Price") +
+  scale_color_manual(values = c("CRYPTO 10 Index" = "Blue")) + xlim(start_date,end_date)
+  ggtitle("Crypto10 Index")
+grid.arrange(plot_eth_btc, plot_crpto10, ncol = 2)
+plot(grid.arrange(plot_eth_btc, plot_crpto10, ncol = 2))
+```
+
+
+#Gold
+Gold.Index= read.csv("Gold Futures Historical Data.csv")
+Gold.Index$Date <- as.Date(Gold.Index$Date, format = "%m/%d/%Y")
+Gold.Index=Gold.Index[rev(1:nrow(Gold.Index)), ]
+Gold.Index$Price <- as.numeric(gsub(",", "", Gold.Index$Price))
+str(Gold.Index)
+#Silver
+Silver.Index= read.csv("Silver Futures Historical Data.csv")
+Silver.Index$Date <- as.Date(Silver.Index$Date, format = "%m/%d/%Y")
+Silver.Index=Silver.Index[rev(1:nrow(Silver.Index)), ]
+Silver.Index$Price <- as.numeric(gsub(",", "", Silver.Index$Price))
+str(Silver.Index)
+#NaturalGas
+Naturalgas.Index= read.csv("Natural Gas Futures Historical Data.csv")
+Naturalgas.Index$Date <- as.Date(Naturalgas.Index$Date, format = "%m/%d/%Y")
+Naturalgas.Index=Naturalgas.Index[rev(1:nrow(Naturalgas.Index)), ]
+Naturalgas.Index$Price <- as.numeric(gsub(",", "", Naturalgas.Index$Price))
+str(Naturalgas.Index)
+#Crudeoil
+Crudeoil.Index= read.csv("Crude Oil WTI Futures Historical Data.csv")
+Crudeoil.Index$Date <- as.Date(Crudeoil.Index$Date, format = "%m/%d/%Y")
+Crudeoil.Index=Crudeoil.Index[rev(1:nrow(Crudeoil.Index)), ]
+Crudeoil.Index$Price <- as.numeric(gsub(",", "", Crudeoil.Index$Price))
+str(Crudeoil.Index)
+```{r}
+#Gold and Silver
+#correlation between Gold and Silver is 0.65
+merged_Gold_Silver= merge(Gold.Index, Silver.Index, by = "Date")
+correlation_Gold_Silver <- cor(merged_Gold_Silver$Price.x,merged_Gold_Silver$Price.y)
+correlation_Gold_Silver
+#scatterplot between Gold and Silver
+library(ggplot2)
+Gold_Silver_plot <-
+ggplot(merged_Gold_Silver, aes(x = Price.x, y = Price.y)) +
+  geom_line() +
+  labs(
+    title = "Scatter Plot: Gold and Silver",
+    x = "Gold",
+    y = "Silver"
+  ) +
+  theme_minimal()
+Gold_Silver_plot
+```
 
 
 
 
+```{r}
+#Natural gas and Crude oil
+#correlation between Natural gas and Crude oil is 0.612
+merged_NG_CO= merge(Naturalgas.Index, Crudeoil.Index, by = "Date")
+correlation_NG_CO <- cor(merged_NG_CO$Price.x,merged_NG_CO$Price.y)
+correlation_NG_CO
+#scatterplot between Natural gas and Crude oil
+library(ggplot2)
+NG_CO_plot <-
+ggplot(merged_NG_CO, aes(x = Price.x, y = Price.y)) +
+  geom_line() +
+  labs(
+    title = "Scatter Plot: Natural gas and Crude oil",
+    x = "Naturalgas",
+    y = "Crudeoil"
+  ) +
+  theme_minimal()
+NG_CO_plot
+```
 
+#Plotting Gold, Silver, Natural gas, Crude oil, Nasdaq together
+
+```{r}
+Commodity_overtimePlot <-
+ggplot() +
+  geom_line(data = Silver.Index, aes(x = Date, y = Price, color = "Silver Index"), size = 0.5) +
+  geom_line(data = Naturalgas.Index, aes(x = Date, y = Price, color = "Natural gas Index"), size = 0.5) +
+  geom_line(data = Crudeoil.Index, aes(x = Date, y = Price, color = "Crudeoil Index"), size = 0.5) +
+  labs(
+    title = "Commodity Index Comparison Over Time",
+    x = "Date",
+    y = "Price",
+    color = "Index"
+  ) +
+  scale_color_manual(values = c("Gold Index" = "Gold", "Silver Index" = "Grey", "Natural gas Index"="Green", "Crudeoil Index"="Orange", "Nasdaq"="Blue")) +
+  theme_minimal()
+Commodity_overtimePlot
+plot_nasdaq_gold <- ggplot() +
+  geom_line(data =Nasdaq, aes(x = Date, y = Price, color = "Nasdaq"), size = 0.5)  +
+  geom_line(data = Gold.Index, aes(x = Date, y = Price, color = "Gold Index"), size = 0.5) +
+  labs(x = "Date", y = "Price") +
+  scale_color_manual(values = c("Nasdaq" = "blue", "Gold Index"="Gold")) +
+  ggtitle("Nasdaq Index Price")
+
+grid.arrange(Commodity_overtimePlot,plot_nasdaq_gold, ncol = 2)
+plot(grid.arrange(Commodity_overtimePlot,plot_nasdaq_gold, ncol = 2))
+```
+
+
+
+# we can calculate outlier here in orange
 
 
 
