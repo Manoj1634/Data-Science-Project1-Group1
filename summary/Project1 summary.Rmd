@@ -1,0 +1,140 @@
+---
+title: "Analysis of Various Global Indexes"
+author: "Goup 1"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+
+### Introduction
+
+  In the world of financial analysis, the power of data-driven exploration cannot be understated. This summary paper embarks on an in-depth journey through an extensive dataset spanning from October 1, 2007, to September 26, 2023, encompassing over 4000 rows of data. Within this dataset, a rich tapestry of information awaits, including various indicators, equity indices, cryptocurrency data, commodity prices, and vital financial market metrics.
+  
+  The core of our exploration is guided by a set of profound research questions, each illuminating a unique facet of the financial landscape:
+Our first research question delves into the performance and intricate interplay between three pillars of the financial world: Nasdaq, the S&P 500, and the US 10-Year Bond. This analysis seeks to uncover the dynamics that have molded these essential instruments over the past decade and a half.
+
+  The second question broadens the horizon, exploring the interconnectedness of global stock indexes, ranging from the United Kingdom and the United States to India, Russia, and Singapore. This international perspective aims to reveal patterns and correlations that transcend borders, painting a picture of the global financial web. Moving into the world of digital assets, our third question investigates the relationship between Nasdaq, a stalwart of traditional finance, and the volatile realm of cryptocurrencies, with a particular focus on Bitcoin and the Crypto 10 index.
+  
+  Finally, the fourth question steers our gaze toward the commodities market, examining the intricate relationship between commodities such as gold, silver, natural gas, and crude oil in comparison to the performance of the US Dollar (USD) Index. This analysis could unearth valuable insights into the interplay of these asset classes.
+This paper's aim is to methodically dissect our dataset, responding to these research questions and providing deeper insights into the intricate dynamics of the financial world. Regardless of your role as an investor, researcher, or financial enthusiast, this exploration intends to shed light on the intricate relationships that mold our global economy, equipping you with knowledge to navigate the challenges and opportunities that lie ahead.
+
+
+
+### Q4
+
+```{r, echo=FALSE, include=FALSE}
+library(knitr)
+library(readr)
+library(readxl)
+library(magrittr)
+library(dplyr)
+library(ggplot2)
+library(gridExtra)
+USDollar <- read_csv("US Dollar Index Historical Data.csv")
+CrudeOil <- read_csv("Crude Oil WTI Futures Historical Data.csv")
+Nat_Gas <- read_csv("Natural Gas Futures Historical Data.csv")
+Gold <- read_csv("Gold Futures Historical Data.csv")
+Silver <- read_csv("Silver Futures Historical Data.csv")
+CrudeOil <- CrudeOil %>% mutate(Date = as.Date(Date, format = "%m/%d/%Y"))
+Gold <- Gold %>% mutate(Date = as.Date(Date, format = "%m/%d/%Y"))
+Nat_Gas <- Nat_Gas %>% mutate(Date = as.Date(Date, format = "%m/%d/%Y"))
+Silver <- Silver %>% mutate(Date = as.Date(Date, format = "%m/%d/%Y"))
+USDollar <- USDollar %>% mutate(Date = as.Date(Date, format = "%m/%d/%Y"))
+```
+
+  The analysis of financial datasets often uncovers intriguing insights that extend beyond conventional financial metrics. In the context of commodities and currencies, outliers represent data points that stand apart from the norm. In this dataset encompassing different commodity varaibles, silver and natural gas emerge as the variables with the most outliers, showing a heightened susceptibility to extreme price fluctuations and market conditions that deviate from the typical patterns. Silver, a precious metal subject to influences ranging from economic data releases to geopolitical tensions, frequently experiences price swings. The multiple outliers suggest that silver prices can exhibit extraordinary shifts, raising questions about the drivers behind these exceptional movements. A similar narrative unfolds for natural gas, heavily influenced by supply and demand dynamics and energy market conditions. The notable number of outliers underscores the commodity's propensity for significant deviations from the expected price range, sparking curiosity about the underlying causes.
+
+```{r, echo=FALSE}
+library(ggplot2)
+library(gridExtra)
+C1 <- ggplot(data = CrudeOil, aes(x = "", y = Price)) +
+  geom_boxplot(fill = "blue") +
+  labs(title = "Crude Oil Price Box Plot",
+       x = "",
+       y = "Price") +
+  theme_minimal()
+G1 <- ggplot(data = Gold, aes(x = "", y = Price)) +
+  geom_boxplot(fill = "yellow") +
+  labs(title = "Gold Price Box Plot",
+       x = "",
+       y = "Price") +
+  theme_minimal()
+
+N1 <- ggplot(data = Nat_Gas, aes(x = "", y = Price)) +
+  geom_boxplot(fill = "green") +
+  labs(title = "Natural Gas Price Box Plot",
+       x = "",
+       y = "Price") +
+  theme_minimal()
+S1 <- ggplot(data = Silver, aes(x = "", y = Price)) +
+  geom_boxplot(fill = "gray") +
+  labs(title = "Silver Price Box Plot",
+       x = "",
+       y = "Price") +
+  theme_minimal()
+
+U1 <- ggplot(data = USDollar, aes(x = "", y = Price)) +
+  geom_boxplot(fill = "red") +
+  labs(title = "U.S. Dollar Price Box Plot",
+       x = "",
+       y = "Price") +
+  theme_minimal()
+grid.arrange(G1, C1, N1, S1, U1, ncol = 2)
+```
+ 
+  The dataset also reveals that crude oil, a critical energy commodity, demonstrates relatively fewer outliers. This observation suggests that crude oil maintains a more stable price range during the covered period. It's indicative of the underlying factors and mechanisms governing the crude oil market, contributing to a smoother price variation compared to silver and natural gas. Understanding this differential behavior is crucial for us in order to manage risk effectively and make well-informed investment decisions. The recognition of outliers transcends numerical data points; it serves as a critical indicator in financial analysis. By investigating the nature and causes of these outliers, we gain deeper insights into the forces influencing these markets. This analysis enhances our ability to navigate the complexities of commodities and currencies, assess market volatility, and ultimately guiding more effective financial decision-making.
+ 
+  The analysis of correlation coefficients between various commodity indices and the U.S. Dollar Index gives us essential insights into the dynamics of financial markets. Notably, the Crude Oil Index displays a strong negative correlation of -0.5576336 with the U.S. Dollar Index, implying that when the U.S. Dollar strengthens, the Crude Oil Index tends to decline. This inverse relationship likely stems from the global oil market's reliance on the U.S. Dollar as the primary currency for trading oil commodities. In contrast, the Gold Index exhibits a positive correlation coefficient of 0.3801943, indicating that as the U.S. Dollar appreciates, gold prices tend to rise. This relationship is often attributed to gold's historical role as a safe-haven asset during economic uncertainty. However, due to the Dollar being a F.I.A.T. currency, we should see any correlation between Gold and U.S. currency.
+  
+```{r, echo=FALSE,cache.comments=FALSE}
+C <- ggplot(data = CrudeOil, aes(x = Date)) +
+  geom_line(aes(y = Price, color = "Crude Oil"), linewidth = 1) +
+  geom_line(data = USDollar, aes(y = Price, color = "U.S. Dollar"), linewidth = 1) +
+  labs(title = "Crude Oil Price vs. U.S. Dollar",
+       x = "Date",
+       y = "Price",
+       color = "Commodity") +
+  scale_color_manual(values = c("Crude Oil" = "blue", "U.S. Dollar" = "red")) +
+  theme_minimal()
+G <- ggplot(data = Gold, aes(x = Date)) +
+  geom_line(aes(y = Price, color = "Gold"), linewidth = 1) +
+  geom_line(data = USDollar, aes(y = Price, color = "U.S. Dollar"), linewidth = 1) +
+  labs(title = "Gold Price vs. U.S. Dollar",
+       x = "Date",
+       y = "Price",
+       color = "Commodity") +
+  scale_color_manual(values = c("Gold" = "yellow", "U.S. Dollar" = "pink")) +
+  theme_minimal()
+grid.arrange(C, G, ncol = 2)
+```
+
+  Similarly, the Natural Gas Index displays a negative correlation coefficient of -0.3524114 with the U.S. Dollar Index, implying that when the U.S. Dollar strengthens, natural gas prices tend to decrease. This relationship may be influenced by various factors, including energy market dynamics and supply-demand forces. The Silver Index also reveals a negative correlation, with a correlation coefficient of -0.3119592, meaning that a stronger U.S. Dollar is associated with lower silver prices. Silver, like gold, often exhibits similar reactions to currency fluctuations. In addition to these correlations, the identification of multiple outliers in the Natural Gas and Silver Indices indicates that these commodities may be more sensitive to specific market events or conditions, resulting in greater price volatility.
+
+```{r, echo=FALSE, include=TRUE}
+N <- ggplot(data = Nat_Gas, aes(x = Date)) +
+  geom_line(aes(y = Price, color = "Nat_Gas"), linewidth = 1) +
+  geom_line(data = USDollar, aes(y = Price, color = "U.S. Dollar"), linewidth = 1) +
+  labs(title = "Natural Gas Price vs. U.S. Dollar",
+       x = "Date",
+       y = "Price",
+       color = "Commodity") +
+  scale_color_manual(values = c("Natural Gas" = "purple", "U.S. Dollar" = "turquoise")) +
+  theme_minimal()
+S <- ggplot(data = Silver, aes(x = Date)) +
+  geom_line(aes(y = Price, color = "Silver"), linewidth = 1) +
+  geom_line(data = USDollar, aes(y = Price, color = "U.S. Dollar"), linewidth = 1) +
+  labs(title = "Silver Price vs. U.S. Dollar",
+       x = "Date",
+       y = "Price",
+       color = "Commodity") +
+  scale_color_manual(values = c("Silver" = "lightblue", "U.S. Dollar" = "lightgreen")) +
+  theme_minimal()
+grid.arrange(S, N, ncol = 2)
+```
+
+  Moreover, the year 2020 serves as a noteworthy illustration of the broader market dynamics at play. During this period, the crude oil market experienced a significant downturn primarily due to the global COVID-19 pandemic. This event had profound implications for the energy sector, causing demand shocks, supply disruptions and impacting crude oil prices. The pandemic-induced market turmoil underscores the critical role that external events can play in influencing commodity prices, emphasizing the importance of considering broader economic and geopolitical factors in commodity analysis.
+
+
+## Conclusion
+
+In light of these findings, this analysis underscores the importance of understanding the multifaceted dynamics of global financial markets. It offers a roadmap to make informed investment decisions, implement effective risk management strategies, and identify opportunities for diversification in an ever-evolving financial landscape. The global financial system is a complex ecosystem where assets are interconnected, and events in one part of the world can reverberate across the globe. By unraveling these relationships, we empower investors, researchers, and market participants to navigate the financial landscape with a more profound understanding of its intricacies.
