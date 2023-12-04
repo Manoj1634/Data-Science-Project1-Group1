@@ -1,0 +1,256 @@
+---
+title: "Project2"
+author: "Manoj"
+date: "2023-11-23"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r}
+#Nasdaq Index
+Nasdaq=read.csv("Nasdaq 100 Historical Data.csv")
+Nasdaq <- Nasdaq[, c("Date", "Price")]
+# Convert 'Date' column in Nasdaq data frame to Date format
+library(anytime)
+
+# Convert 'Date' column in Nasdaq data frame to Date format using anytime::anydate()
+Nasdaq$Date <- anytime::anydate(Nasdaq$Date)
+Nasdaq$Date <- as.Date(Nasdaq$Date, format = "%Y-%m-%d", errors = "coerce")
+
+LIBOR_unfiltered=read.csv("LIBOR USD.csv")
+
+library(dplyr)
+library(lubridate)
+LIBOR <- LIBOR_unfiltered[, c("Date", "X1M")]
+LIBOR$Date <- dmy(LIBOR$Date)  # Assuming 'dmy' function can parse 'dd.mm.yyyy'
+head(LIBOR)
+
+FED_Rates=read.csv("fed rates.csv")
+head(FED_Rates)
+USDIndex=read.csv("US Dollar Index Historical Data.csv")
+USDIndex <- USDIndex[, c("Date", "Price")]
+head(USDIndex)
+US10Yearbond=read.csv("United States 10-Year Bond Yield Historical Data.csv")
+US10Yearbond <- US10Yearbond[, c("Date", "Price")]
+Inflationrates_unfiltered=read.csv("INFLATION RATES USA.csv")
+USDIndex$Date <- anytime::anydate(USDIndex$Date)
+
+# Convert 'Date' column in US10Yearbond data frame to Date format using anytime::anydate()
+US10Yearbond$Date <- anytime::anydate(US10Yearbond$Date)
+
+
+
+# Convert 'Date' column in LIBOR data frame to Date format using anytime::anydate()
+LIBOR$Date <- anytime::anydate(LIBOR$Date)
+
+# Convert 'Date' column in FED_Rates data frame to Date format using anytime::anydate()
+FED_Rates$Date <- anytime::anydate(FED_Rates$Date)
+head(Nasdaq)
+
+head(US10Yearbond)
+```
+
+```{r}
+Inflationrates_unfiltered$Date <- as.Date(Inflationrates_unfiltered$DATE, format = "%d/%m/%Y")
+
+# Remove the original DATE column
+Inflationrates_unfiltered <- Inflationrates_unfiltered[, -which(names(Inflationrates_unfiltered) == "DATE")]
+
+# Rename the new Date column
+colnames(Inflationrates_unfiltered)[colnames(Inflationrates_unfiltered) == "Date"] <- "Date"
+head(Inflationrates_unfiltered)
+
+```
+```{r}
+library(dplyr)
+library(tidyr)
+library(lubridate)
+library(purrr)
+# Expand dates and inflation rates for each month
+Inflation_data <- Inflationrates_unfiltered %>%
+  mutate(Date = map(Date, ~ seq(as.Date(.x), as.Date(.x) %m+% months(1) - days(1), by = "day"))) %>%
+  unnest(cols = c(Date))
+
+# View the expanded dataset
+Inflation_data
+
+
+
+```
+
+library(dplyr)
+
+# Assuming df_inflation, df_fed_rates, df_usd_index, df_us_10year_bond, df_libor, df_nasdaq are your separate data frames for each variable
+
+# Merging based on 'Date' column
+library(dplyr)
+
+# Assuming df_inflation, df_fed_rates, df_usd_index, df_us_10year_bond, df_libor, df_nasdaq are your separate data frames for each variable
+
+# Merging based on 'Date' column and keeping the 'Date' column
+```{r}
+merged_data <- Nasdaq %>%
+  select(Date) %>%
+  left_join(Nasdaq, by = "Date") %>%
+  left_join(USDIndex, by = "Date") %>%
+  left_join(US10Yearbond, by = "Date") %>%
+  left_join(Inflation_data, by = "Date") %>%
+  left_join(LIBOR, by = "Date") %>%
+  left_join(FED_Rates, by = "Date")
+
+
+```
+
+merged_data <- na.omit(merged_data)
+library(dplyr)
+
+# Rename columns in merged_data
+merged_data <- merged_data %>%
+  rename(
+    Nasdaq = Price.x,
+    USDIndex = Price.y,
+    US10Yearbond = Price,
+    Inflation = INFLATION.RATES,
+    LIBOR = X1M,
+    FEDrates = DFF
+  )
+head(merged_data)
+
+library(ggplot2)
+
+# Plotting multiple variables over time
+  library(ggplot2)
+ggplot(merged_data, aes(x = Date)) +
+  geom_line(aes(y = US10Yearbond, color = "US 10-Year Bond")) +
+  geom_line(aes(y = Inflation, color = "Inflation")) +
+  geom_line(aes(y = LIBOR, color = "LIBOR")) +
+  geom_line(aes(y = FEDrates, color = "FED Rates")) +
+  labs(color = "Variables") +
+  ggtitle("Plot of Multiple Variables Over Time") +
+  xlab("Date") +
+  ylab("Value")
+  
+
+
+# Plot USDIndex vs. Date
+ggplot(merged_data, aes(x = Date, y = USDIndex)) +
+  geom_line(color = "blue") +
+  ggtitle("USD Index Over Time") +
+  xlab("Date") +
+  ylab("USD Index Value")
+
+merged_data$Nasdaq <- as.numeric(gsub(",", "", merged_data$Nasdaq))
+ggplot(merged_data, aes(x = Date, y = Nasdaq)) +
+  geom_line(color = "red") +
+  ggtitle("Nasdaq Over Time") +
+  xlab("Date") +
+  ylab("Nasdaq Value")
+
+
+# Install the gridExtra package if you haven't installed it
+# install.packages("gridExtra")
+library(ggplot2)
+library(grid)
+library(gridExtra)
+
+# Create the plots
+plot_left_big <- ggplot(merged_data, aes(x = Date)) +
+  geom_line(aes(y = US10Yearbond, color = "US 10-Year Bond")) +
+  geom_line(aes(y = Inflation, color = "Inflation")) +
+  geom_line(aes(y = LIBOR, color = "LIBOR")) +
+  geom_line(aes(y = FEDrates, color = "FED Rates")) +
+  labs(color = "Variables") +
+  ggtitle("Plot of Multiple Variables Over Time") +
+  xlab("Date") +
+  ylab("Value")
+
+plot_right_upper <- ggplot(merged_data, aes(x = Date, y = USDIndex)) +
+  geom_line(color = "blue") +
+  ggtitle("USD Index Over Time") +
+  xlab("Date") +
+  ylab("USD Index Value")
+
+plot_right_lower <- ggplot(merged_data, aes(x = Date, y = Nasdaq)) +
+  geom_line(color = "red") +
+  ggtitle("Nasdaq Over Time") +
+  xlab("Date") +
+  ylab("Nasdaq Value")
+
+# Arrange the plots in a grid layout with different sizes
+grid.arrange(
+  arrangeGrob(plot_left_big, ncol = 1),  # First plot (big)
+  plot_right_upper,  # Second plot (upper right)
+  plot_right_lower,  # Third plot (lower right)
+  ncol = 2  # Set the number of columns in the grid
+)
+
+
+
+# Install GGally package if not installed
+# install.packages("GGally")
+library(GGally)
+pair_data <- merged_data[, c("Nasdaq", "USDIndex", "US10Yearbond", "Inflation", "LIBOR", "FEDrates")]
+ggpairs(pair_data)
+
+# Convert 'Date' to Date format if not already in Date format
+merged_data$Date <- as.Date(merged_data$Date)
+
+# Check for missing values
+sum(is.na(merged_data))
+
+# Split data into training and test sets (e.g., using 80-20 split)
+set.seed(123)
+train_indices <- sample(1:nrow(merged_data), 0.8 * nrow(merged_data))
+train_data <- merged_data[train_indices, ]
+test_data <- merged_data[-train_indices, ]
+
+# Fit a linear regression model
+model <- lm(Nasdaq ~ USDIndex + US10Yearbond + Inflation + LIBOR + FEDrates, data = train_data)
+summary(model)
+# Predict Nasdaq using the test set
+predictions <- predict(model, newdata = test_data)
+
+# Evaluate model performance (e.g., calculate R-squared)
+rsquared <- summary(model)$r.squared
+
+An R-squared value of 0.745 means that approximately 74.5% of the variability in the Nasdaq variable can be explained by the variation in the predictors (USDIndex, US10Yearbond, Inflation, LIBOR, and FEDrates) in your model. In simpler terms, it suggests that these independent variables collectively account for 74.5% of the changes observed in the Nasdaq values. The higher the R-squared value (closer to 1), the better the model fits the data.
+
+AIC_value <- AIC(model)
+
+# Print the AIC value
+print(AIC_value)
+# Fit the linear regression model
+model <- lm(Nasdaq ~ USDIndex + US10Yearbond + Inflation + LIBOR + FEDrates, data = train_data)
+
+# Get the BIC value
+BIC_value <- BIC(model)
+print(BIC_value)
+
+#check which is better for using the other variable S&P 500 or 
+#predict nifty50 using NASDAQ
+
+
+
