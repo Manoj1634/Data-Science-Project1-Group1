@@ -1,0 +1,1056 @@
+---
+title: "Q1_MANOJ"
+author: "Manoj"
+date: "2023-12-05"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r}
+#Nasdaq Data Cleaning
+Nasdaq=read.csv("Nasdaq 100 Historical Data.csv")
+Nasdaq <- Nasdaq[, c("Date", "Price")]
+# Convert 'Date' column in Nasdaq data frame to Date format
+library(anytime)
+Nasdaq$Date <- anytime::anydate(Nasdaq$Date)
+Nasdaq$Date <- as.Date(Nasdaq$Date, format = "%Y-%m-%d", errors = "coerce")
+head(Nasdaq)
+```
+
+```{r}
+#Libor Index
+#4035 rows
+library(dplyr)
+library(lubridate)
+LIBOR_unfiltered=read.csv("LIBOR USD.csv")
+head(LIBOR_unfiltered)
+LIBOR <- LIBOR_unfiltered[, c("Date", "X1M")]
+LIBOR$Date <- dmy(LIBOR$Date)  # Assuming 'dmy' function can parse 'dd.mm.yyyy'
+head(LIBOR)
+```
+```{r}
+#FED Rates
+#5836 rows
+FED_Rates=read.csv("fed rates.csv")
+FED_Rates$Date <- anytime::anydate(FED_Rates$Date)
+FED_Rates$DFF <- as.numeric(FED_Rates$DFF)
+head(FED_Rates)
+nrow(FED_Rates)
+#starting from 2007, 1st row 2007
+FED_Rates
+sum(is.na(FED_Rates$DFF))
+FED_Rates <- FED_Rates[nrow(FED_Rates):1, ]
+library(tidyr)
+library(dplyr)
+library(lubridate)
+# Create a sequence of dates from Oct 1, 2007, to Sep 5, 2023
+date_sequence <- seq(as.Date("2007-10-01"), as.Date("2023-09-25"), by = "day")
+
+# Convert your 'Date' column to a date format
+FED_Rates$Date <- as.Date(FED_Rates$Date)
+
+# Create a complete dataset with all dates in the sequence
+complete_dates <- tibble(Date = date_sequence)
+
+# Merge the complete dates with your dataset
+filled_data <- complete_dates %>%
+  left_join(FED_Rates, by = "Date")
+
+# Fill missing values in DFF with next or previous value
+filled_data$DFF <- filled_data %>%
+  group_by(Date) %>%
+  fill(DFF, .direction = c("next", "previous"))
+
+# Print the filled dataset
+print(filled_data)
+
+```
+```{r}
+#USD Index
+USDIndex=read.csv("US Dollar Index Historical Data.csv")
+USDIndex <- USDIndex[, c("Date", "Price")]
+USDIndex$Date <- anytime::anydate(USDIndex$Date)
+head(USDIndex)
+nrow(USDIndex)
+
+#4165rows
+```
+```{r}
+US10Yearbond=read.csv("United States 10-Year Bond Yield Historical Data.csv")
+US10Yearbond <- US10Yearbond[, c("Date", "Price")]
+US10Yearbond$Date <- anytime::anydate(US10Yearbond$Date)
+head(US10Yearbond)
+nrow(US10Yearbond)
+#4158 rows
+```
+```{r}
+library(dplyr)
+library(tidyr)
+library(lubridate)
+library(purrr)
+# Expand dates and inflation rates for each month
+Inflationrates_unfiltered=read.csv("INFLATION RATES USA.csv")
+Inflationrates_unfiltered$Date <- as.Date(Inflationrates_unfiltered$DATE, format = "%d/%m/%Y")
+
+# Remove the original DATE column
+Inflationrates_unfiltered <- Inflationrates_unfiltered[, -which(names(Inflationrates_unfiltered) == "DATE")]
+
+# Rename the new Date column
+colnames(Inflationrates_unfiltered)[colnames(Inflationrates_unfiltered) == "Date"] <- "Date"
+head(Inflationrates_unfiltered)
+Inflation_data <- Inflationrates_unfiltered %>%
+  mutate(Date = map(Date, ~ seq(as.Date(.x), as.Date(.x) %m+% months(1) - days(1), by = "day"))) %>%
+  unnest(cols = c(Date))
+
+# View the expanded dataset
+Inflation_data
+tail(Inflation_data)
+#5844. rows
+
+```
+
+```{r}
+merged_data <- Nasdaq %>%
+  select(Date) %>%
+  left_join(Nasdaq, by = "Date") %>%
+  left_join(USDIndex, by = "Date") %>%
+  left_join(US10Yearbond, by = "Date") %>%
+  left_join(Inflation_data, by = "Date") %>%
+  left_join(LIBOR, by = "Date")
+#%>%left_join(FED_Rates, by = "Date")
+merged_data_fed=Nasdaq %>%
+  select(Date) %>%
+  left_join(Nasdaq, by = "Date") %>%
+  left_join(USDIndex, by = "Date") %>%
+  left_join(US10Yearbond, by = "Date") %>%
+  left_join(Inflation_data, by = "Date") %>%
+  left_join(LIBOR, by = "Date")%>%
+  left_join(FED_Rates, by = "Date")
+
+merged_data <- merged_data %>%
+  rename(
+    Nasdaq = Price.x,
+    USDIndex = Price.y,
+    US10Yearbond = Price,
+    Inflation = INFLATION.RATES,
+    LIBOR = X1M,
+    #FEDrates = DFF
+  )
+merged_data$Nasdaq <- as.numeric(gsub(",", "", merged_data$Nasdaq))
+merged_data_fed <- merged_data_fed %>%
+  rename(
+    Nasdaq = Price.x,
+    USDIndex = Price.y,
+    US10Yearbond = Price,
+    Inflation = INFLATION.RATES,
+    LIBOR = X1M,
+    FEDrates = DFF
+  )
+
+head(merged_data)
+tail(merged_data)
+nrow(merged_data)
+number_of_nulls <- sum(is.na(merged_data$FEDrates))
+print(number_of_nulls)
+```
+```{r}
+  library(ggplot2)
+ggplot(merged_data, aes(x = Date)) +
+  geom_line(aes(y = US10Yearbond, color = "US 10-Year Bond")) +
+  geom_line(aes(y = Inflation, color = "Inflation")) +
+  geom_line(aes(y = LIBOR, color = "LIBOR")) +
+  #geom_line(aes(y = FEDrates, color = "FED Rates")) +
+  labs(color = "Variables") +
+  ggtitle("Plot of Multiple Variables Over Time") +
+  xlab("Date") +
+  ylab("Value")
+  
+
+
+# Plot USDIndex vs. Date
+ggplot(merged_data, aes(x = Date, y = USDIndex)) +
+  geom_line(color = "blue") +
+  ggtitle("USD Index Over Time") +
+  xlab("Date") +
+  ylab("USD Index Value")
+
+merged_data$Nasdaq <- as.numeric(gsub(",", "", merged_data$Nasdaq))
+ggplot(merged_data, aes(x = Date, y = Nasdaq)) +
+  geom_line(color = "red") +
+  ggtitle("Nasdaq Over Time") +
+  xlab("Date") +
+  ylab("Nasdaq Value")
+
+
+# Install the gridExtra package if you haven't installed it
+# install.packages("gridExtra")
+library(ggplot2)
+library(grid)
+library(gridExtra)
+
+# Create the plots
+plot_left_big <- ggplot(merged_data, aes(x = Date)) +
+  geom_line(aes(y = US10Yearbond, color = "US 10-Year Bond")) +
+  geom_line(aes(y = Inflation, color = "Inflation")) +
+  geom_line(aes(y = LIBOR, color = "LIBOR")) +
+  #geom_line(aes(y = FEDrates, color = "FED Rates")) +
+  labs(color = "Variables") +
+  ggtitle("Plot of Multiple Variables Over Time") +
+  xlab("Date") +
+  ylab("Value")
+
+plot_right_upper <- ggplot(merged_data, aes(x = Date, y = USDIndex)) +
+  geom_line(color = "blue") +
+  ggtitle("USD Index Over Time") +
+  xlab("Date") +
+  ylab("USD Index Value")
+
+plot_right_lower <- ggplot(merged_data, aes(x = Date, y = Nasdaq)) +
+  geom_line(color = "red") +
+  ggtitle("Nasdaq Over Time") +
+  xlab("Date") +
+  ylab("Nasdaq Value")
+
+# Arrange the plots in a grid layout with different sizes
+grid.arrange(
+  arrangeGrob(plot_left_big, ncol = 1),  # First plot (big)
+  plot_right_upper,  # Second plot (upper right)
+  plot_right_lower,  # Third plot (lower right)
+  ncol = 2  # Set the number of columns in the grid
+)
+
+
+
+
+
+
+
+```
+```{r}
+#plot with over all indicators
+  library(ggplot2)
+ggplot(merged_data_fed, aes(x = Date)) +
+  geom_line(aes(y = US10Yearbond, color = "US 10-Year Bond")) +
+  geom_line(aes(y = Inflation, color = "Inflation")) +
+  geom_line(aes(y = LIBOR, color = "LIBOR")) +
+  geom_line(aes(y = FEDrates, color = "FED Rates")) +
+  labs(color = "Variables") +
+  ggtitle("Plot of Multiple Variables Over Time") +
+  xlab("Date") +
+  ylab("Value")
+  
+
+
+```
+
+```{r}
+#correlation pplot between for "Nasdaq", "USDIndex", "US10Yearbond", "Inflation"and  "LIBOR"
+library(GGally)
+pair_data <- merged_data[, c("Nasdaq", "USDIndex", "US10Yearbond", "Inflation", "LIBOR")]
+ggpairs(pair_data)
+```
+```{r}
+merged_data$Nasdaq <- as.numeric(gsub(",", "", merged_data$Nasdaq))
+#corrmat <- cor(merged_data)
+
+# Create the correlation heatmap
+corrplot(corrmat, method = "color")
+```
+
+```{r}
+#ML model 
+#Testing and Traing
+merged_data$Date <- as.Date(merged_data$Date)
+sum(is.na(merged_data))
+set.seed(123)
+train_indices <- sample(1:nrow(merged_data), 0.8 * nrow(merged_data))
+train_data <- merged_data[train_indices, ]
+test_data <- merged_data[-train_indices, ]
+```
+```{r}
+#model1
+model1 <- lm(Nasdaq ~ USDIndex + US10Yearbond, data = train_data)
+summary(model1)
+rsquared <- summary(model1)$r.squared
+print(rsquared)
+#0.591
+```
+
+```{r}
+# Predict Nasdaq using the test set
+predictions <- predict(model1, newdata = test_data)
+
+library(ggplot2)
+
+# Assuming 'test_data' contains 'Nasdaq' column for actual values and 'predictions' for predicted values
+plot_data <- data.frame(Date = test_data$Date, Actual = test_data$Nasdaq, Predicted = predictions)
+
+# Plotting actual vs predicted values over time
+ggplot(plot_data, aes(x = Date)) +
+  geom_line(aes(y = Actual, color = "Actual")) +
+  geom_line(aes(y = Predicted, color = "Predicted")) +
+  labs(x = "Date", y = "Nasdaq Value", title = "Actual vs Predicted Nasdaq Over Time") +
+  scale_color_manual(values = c("blue", "red"), labels = c("Actual", "Predicted")) +
+  theme_minimal()
+```
+```{r}
+rmse1 <- sqrt(mean((predictions - test_data$Nasdaq)^2))
+lmse1 <- mean((predictions - test_data$Nasdaq)^2)
+
+# Print RMSE and LMSE
+cat("RMSE:", rmse1, "\n")
+cat("LMSE:", lmse1, "\n")
+AIC_value1 <- AIC(model1)
+print(AIC_value1)
+```
+
+
+
+```{r}
+model2 <- lm(Nasdaq ~ USDIndex + US10Yearbond + Inflation + LIBOR, data = train_data)
+summary(model2)
+rsquared <- summary(model2)$r.squared
+print(rsquared)
+
+```
+
+```{r}
+
+# Predict Nasdaq using the test set
+predictions2 <- predict(model2, newdata = test_data)
+
+library(ggplot2)
+
+# Assuming 'test_data' contains 'Nasdaq' column for actual values and 'predictions' for predicted values
+plot_data <- data.frame(Date = test_data$Date, Actual = test_data$Nasdaq, Predicted = predictions2)
+
+# Plotting actual vs predicted values over time
+ggplot(plot_data, aes(x = Date)) +
+  geom_line(aes(y = Actual, color = "Actual")) +
+  geom_line(aes(y = Predicted, color = "Predicted")) +
+  labs(x = "Date", y = "Nasdaq Value", title = "Actual vs Predicted Nasdaq Over Time") +
+  scale_color_manual(values = c("blue", "red"), labels = c("Actual", "Predicted")) +
+  theme_minimal()
+
+```
+```{r}
+# Assuming 'test_data' contains 'Nasdaq' column for actual values and 'predictions2' for predicted values
+actual_values <- test_data$Nasdaq
+
+# Calculate Mean Squared Error (MSE)
+mse <- mean((predictions2-actual_values)^2)
+
+# Calculate Root Mean Squared Error (RMSE)
+rmse <- sqrt(mse)
+
+cat("Mean Squared Error (MSE):", mse, "\n")
+cat("Root Mean Squared Error (RMSE):", rmse, "\n")
+AIC_value2 <- AIC(model2)
+print(AIC_value2)
+
+```
+
+#RMSE,AIC, LMSE and R squred are less in the second condition
+
+```{r}
+#///merged_data_fed$Date <- as.Date(merged_data_fed$Date)
+#merged_data_fed <- na.omit(merged_data_fed)
+#set.seed(123)
+#train_indicesf <- sample(1:nrow(merged_data_fed), 0.8 * nrow(merged_data_fed))
+#train_dataf <- merged_data_fed[train_indicesf, ]
+#test_dataf <- merged_data_fed[-train_indicesf, ]
+#train_dataf <- na.omit(train_dataf)
+
+
+```
+
+```{r}
+model_rf1 <- randomForest(Nasdaq ~ USDIndex + US10Yearbond + Inflation + LIBOR, data = train_data)
+
+# Summary of the model
+print(model_rf1)
+
+# Predict Nasdaq using the test set
+predictions_rf1 <- predict(model_rf1, newdata = test_data)
+
+# Create a data frame for plotting
+plot_data_rf1 <- data.frame(Date = test_data$Date, Actual = test_data$Nasdaq, Predicted = predictions_rf1)
+
+library(ggplot2)
+ggplot(plot_data_rf1, aes(x = Date)) +
+  geom_line(aes(y = Actual, color = "Actual")) +
+  geom_line(aes(y = Predicted, color = "Predicted")) +
+  labs(x = "Date", y = "Nasdaq Value", title = "Actual vs Predicted Nasdaq (Random Forest) Over Time") +
+  scale_color_manual(values = c("blue", "red"), labels = c("Actual", "Predicted")) +
+  theme_minimal()
+```
+```{r}
+rf_mse1 <- mean((test_data$Nasdaq - predictions_rf1)^2)
+rf_rmse1 <- sqrt(rf_mse1)
+# Display RMSE
+print(paste("Random Forest RMSE:", rf_rmse1))
+#[1] "Random Forest RMSE: 191.129406950224"
+# Feature Importance
+varImpPlot(model_rf1)
+```
+```{r}
+library(xgboost)
+
+train_data_xg1 <- as.matrix(train_data[, c("USDIndex", "US10Yearbond", "Inflation", "LIBOR")])
+train_label_xg1 <- train_data$Nasdaq
+
+dtrain1 <- xgb.DMatrix(data = train_data_xg1, label = train_label_xg1)
+
+test_data_xg1 <- as.matrix(test_data[, c("USDIndex", "US10Yearbond", "Inflation", "LIBOR")])
+dtest1 <- xgb.DMatrix(data = test_data_xg1)
+
+# Define parameters
+params1 <- list(booster = "gbtree", objective = "reg:squarederror")
+
+# Train the model
+xgb_model1 <- xgb.train(params = params1, data = dtrain1, nrounds = 100)
+
+# Predict and evaluate
+predictionsxg_1 <- predict(xgb_model1, dtest1)
+rmse_xg1 <- sqrt(mean((predictionsxg_1 - test_data$Nasdaq)^2))
+print(rmse_xg1)
+```
+```{r}
+test_data$Predicted_Nasdaq <-predictionsxg_1
+```
+
+```{r}
+ggplot(test_data, aes(x = Date)) +
+  geom_line(aes(y = Nasdaq, colour = "Actual Price")) +
+  geom_line(aes(y = Predicted_Nasdaq, colour = "Predicted Price")) +
+  labs(title = "Actual vs Predicted Prices - Nasdaq", y = "Price", colour = "Legend") +
+  theme_minimal()
+
+```
+```{r}
+head(merged_data_r)
+#merged_data_r <- merged_data[nrow(merged_data):1, ]
+#write.csv(merged_data_r, file = "merged_data_r.csv", row.names = FALSE)
+
+train_nasdaq_time <- merged_data_r[merged_data_r$Date <= as.Date("2023-09-1"), ]
+test_nasdaq_time <- merged_data_r[merged_data_r$Date >= as.Date("2023-09-01"), ]
+```
+
+```{r}
+model_rf1_time <- randomForest(Nasdaq ~ USDIndex + US10Yearbond + Inflation + LIBOR, data = train_nasdaq_time)
+
+# Summary of the model
+print(model_rf1_time)
+
+# Predict Nasdaq using the test set
+predictions_rf1_time <- predict(model_rf1_time, newdata = test_nasdaq_time)
+
+# Create a data frame for plotting
+plot_data_rf1_time <- data.frame(Date = test_nasdaq_time$Date, Actual = test_nasdaq_time$Nasdaq, Predicted = predictions_rf1_time)
+
+library(ggplot2)
+ggplot(plot_data_rf1_time, aes(x = Date)) +
+  geom_line(aes(y = Actual, color = "Actual")) +
+  geom_line(aes(y = Predicted, color = "Predicted")) +
+  labs(x = "Date", y = "Nasdaq Value", title = "Actual vs Predicted Nasdaq (Random Forest) Over Time") +
+  scale_color_manual(values = c("blue", "red"), labels = c("Actual", "Predicted")) +
+  theme_minimal()
+
+
+```
+
+```{r}
+
+actual_values <- test_nasdaq_time$Nasdaq
+
+# Calculate Mean Squared Error (MSE)
+mse <- mean((predictions_rf1_time-actual_values)^2)
+
+# Calculate Root Mean Squared Error (RMSE)
+rmse <- sqrt(mse)
+
+cat("Root Mean Squared Error (RMSE):", rmse, "\n")
+
+
+```
+
+```{r}
+library(xgboost)
+#train_nasdaq_time
+#test_nasdaq_time
+train_data_xg2 <- as.matrix(train_nasdaq_time[, c("USDIndex", "US10Yearbond", "Inflation", "LIBOR")])
+train_label_xg2 <- train_nasdaq_time$Nasdaq
+
+dtrain2 <- xgb.DMatrix(data = train_data_xg2, label = train_label_xg2)
+
+test_data_xg2 <- as.matrix(test_nasdaq_time[, c("USDIndex", "US10Yearbond", "Inflation", "LIBOR")])
+dtest2 <- xgb.DMatrix(data = test_data_xg2)
+
+# Define parameters
+params2 <- list(booster = "gbtree", objective = "reg:squarederror")
+
+# Train the model
+xgb_model2 <- xgb.train(params = params2, data = dtrain2, nrounds = 100)
+
+# Predict and evaluate
+predictionsxg_2 <- predict(xgb_model2, dtest2)
+rmse_xg2 <- sqrt(mean((predictionsxg_2 - test_nasdaq_time$Nasdaq)^2))
+print(rmse_xg2)
+```
+```{r}
+test_nasdaq_time$Predicted_Nasdaq <-predictionsxg_2
+```
+
+```{r}
+ggplot(test_nasdaq_time, aes(x = Date)) +
+  geom_line(aes(y = Nasdaq, colour = "Actual Price")) +
+  geom_line(aes(y = Predicted_Nasdaq, colour = "Predicted Price")) +
+  labs(title = "Actual vs Predicted Prices - Nasdaq", y = "Price", colour = "Legend") +
+  theme_minimal()
+
+```
+
+
+
+#Starts here
+```{r}
+#write.csv(AAPL4, file = "AAPL_final.csv", row.names = FALSE)
+
+AAPL_final=read.csv("AAPL_final.csv")
+```
+#Code starts 
+```{r}
+
+AAPL_final$Date <- anytime::anydate(AAPL_final$Date)
+AAPL_final$Date <- as.Date(AAPL_final$Date, format = "%Y-%m-%d", errors = "coerce")
+head(AAPL_final)
+AAPL_final$AAPL.Close <- as.numeric(gsub(",", "", AAPL_final$AAPL.Close))
+```
+
+
+
+
+
+```{r}
+AAPL_final$AAPL.Close <- as.numeric(gsub(",", "", AAPL_final$AAPL.Close))
+plot_apple=
+ggplot(AAPL_final, aes(x = Date, y = AAPL.Close)) +
+  geom_line(color = "red") +
+  ggtitle("Apple Over Time") +
+  xlab("Date") +
+  ylab("Apple Value")
+plot_apple
+```
+#Correlation between Nasdaq and Apple
+
+```{r}
+head(merged_data_r)
+merged_data_final <- merge(merged_data_r,AAPL_final , by = "Date")
+head(merged_data_final)
+tail(merged_data_final)
+```
+```{r}
+merged_data_final$AAPL.Close <- as.numeric(gsub(",", "", merged_data_final$AAPL.Close ))
+library(ggplot2)
+ggplot(merged_data_final, aes(x = Date)) +
+  geom_line(aes(y = (AAPL.Close)*100, color = "AAPL.Close")) +
+  geom_line(aes(y = Nasdaq, color = "Nasdaq")) +
+  labs(color = "Variables") +
+  ggtitle("Plot of (apple)*100 and Nasdaq Over Time") +
+  xlab("Date") +
+  ylab("Value")
+```
+```{r}
+correlation_Nasdaq_Apple <- cor(merged_data_final$Nasdaq,merged_data_final$AAPL.Close)
+correlation_Nasdaq_Apple
+ggplot(merged_data_final, aes(x = Nasdaq, y = AAPL.Close)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +  # You can remove this line if you don't want a regression line
+  labs(title = "Scatter Plot of Nasdaq and Apple",
+       x = "Nasdaq",
+       y = "Apple Close Price") +
+  theme_minimal()
+#0.972
+```
+```{r}
+set.seed(123)
+train_indices_A <- sample(1:nrow(AAPL_final), 0.8 * nrow(AAPL_final))
+train_data_A <- AAPL_final[train_indices, ]
+test_data_A <- AAPL_final[-train_indices, ]
+
+```
+
+```{r}
+
+
+```
+
+```{r}
+#lm model
+model_A1 <- lm(AAPL.Close ~ AAPL.Volume + macd + macd.1 , data = train_data_A)
+summary(model_A1)
+rsquared_A1 <- summary(model_A1)$r.squared
+print(rsquared_A1)
+```
+#0.258 is very less
+```{r}
+# Predict Nasdaq using the test set
+predictions_A1 <- predict(model_A1, newdata = test_data_A)
+
+library(ggplot2)
+
+plot_data_A1 <- data.frame(Date = test_data_A$Date, Actual = test_data_A$AAPL.Close, Predicted = predictions_A1)
+
+# Plotting actual vs predicted values over time
+ggplot(plot_data_A1, aes(x = Date)) +
+  geom_line(aes(y = Actual, color = "Actual")) +
+  geom_line(aes(y = Predicted, color = "Predicted")) +
+  labs(x = "Date", y = "Apple", title = "Actual vs Predicted Apple stock Over Time") +
+  scale_color_manual(values = c("blue", "red"), labels = c("Actual", "Predicted")) +
+  theme_minimal()
+```
+
+```{r}
+rmse_A1 <- sqrt(mean((predictions_A1 - test_data_A$AAPL.Close)^2))
+lmse_A1 <- mean((predictions_A1 - test_data_A$AAPL.Close)^2)
+
+# Print RMSE and LMSE
+cat("RMSE:", rmse_A1, "\n")
+cat("LMSE:", lmse_A1, "\n")
+AIC_value_A1 <- AIC(model_A1)
+print(AIC_value_A1)
+```
+
+
+```{r}
+#lm model
+model_A2 <- lm(AAPL.Close ~ AAPL.Volume + macd + macd.1 + rsi + ema + SMA, data = train_data_A)
+summary(model_A2)
+rsquared_A2 <- summary(model_A2)$r.squared
+print(rsquared_A2)
+```
+```{r}
+# Predict Nasdaq using the test set
+predictions_A2 <- predict(model_A2, newdata = test_data_A)
+
+library(ggplot2)
+
+plot_data_A2 <- data.frame(Date = test_data_A$Date, Actual = test_data_A$AAPL.Close, Predicted = predictions_A2)
+
+# Plotting actual vs predicted values over time
+ggplot(plot_data, aes(x = Date)) +
+  geom_line(aes(y = Actual, color = "Actual")) +
+  geom_line(aes(y = Predicted, color = "Predicted")) +
+  labs(x = "Date", y = "Apple", title = "Actual vs Predicted Apple stock Over Time") +
+  scale_color_manual(values = c("blue", "red"), labels = c("Actual", "Predicted")) +
+  theme_minimal()
+```
+
+```{r}
+rmse_A2 <- sqrt(mean((predictions_A2 - test_data_A$AAPL.Close)^2))
+lmse_A2 <- mean((predictions_A2 - test_data_A$AAPL.Close)^2)
+
+# Print RMSE and LMSE
+cat("RMSE:", rmse_A2, "\n")
+cat("LMSE:", lmse_A2, "\n")
+AIC_value_A2 <- AIC(model_A2)
+print(AIC_value_A2)
+```
+
+
+
+
+
+
+
+
+#finalized the features and using random forest
+
+
+
+```{r}
+
+set.seed(123)
+train_indices <- sample(1:nrow(AAPL_final), 0.8 * nrow(AAPL_final))
+train_data <- AAPL_final[train_indices, ]
+test_data <- AAPL_final[-train_indices, ]
+
+model_A_rf1 <- randomForest(AAPL.Close ~ AAPL.Volume + macd + macd.1 + rsi + ema + SMA, data = train_data)
+print(model_A_rf1)
+# Predict apple using the test set
+predictions_apple <- predict(model_A_rf1, newdata = test_data)
+
+plot_data_A_rf1 <- data.frame(Date = test_data$Date, Actual = test_data$AAPL.Close, Predicted = predictions_apple)
+
+ggplot(plot_data_A_rf1, aes(x = Date)) +
+  geom_line(aes(y = Actual, color = "Actual")) +
+  geom_line(aes(y = Predicted, color = "Predicted")) +
+  labs(x = "Date", y = "Apple Value", title = "Actual vs Predicted AAPL Over Time") +
+  scale_color_manual(values = c("blue", "red"), labels = c("Actual", "Predicted")) +
+  theme_minimal()
+
+
+```
+```{r}
+
+rf_mse_A1 <- sqrt(mean((predictions_apple - test_data_A$AAPL.Close)^2))
+rf_rmse_A1 <- sqrt(rf_mse_A1)
+# Display RMSE
+print(paste("Random Forest RMSE:", rf_rmse_A1))
+
+# Feature Importance
+varImpPlot(model_A_rf1)
+```
+
+
+
+```{r}
+set.seed(123)
+train_indices <- sample(1:nrow(AAPL_final), 0.8 * nrow(AAPL_final))
+train_data <- AAPL_final[train_indices, ]
+test_data <- AAPL_final[-train_indices, ]
+
+library(xgboost)
+
+# Selecting features for training
+train_data_xg1_apple <- as.matrix(train_data[, c("AAPL.Volume", "macd", "macd.1", "rsi", "ema", "SMA")])
+train_label_xg1_apple <- train_data$AAPL.Close
+
+dtrain1_apple <- xgb.DMatrix(data = train_data_xg1_apple, label = train_label_xg1_apple)
+
+# Selecting features for testing
+test_data_xg1_apple <- as.matrix(test_data[, c("AAPL.Volume", "macd", "macd.1", "rsi", "ema", "SMA")])
+dtest1_apple <- xgb.DMatrix(data = test_data_xg1_apple)
+
+# Define parameters
+params1_apple <- list(booster = "gbtree", objective = "reg:squarederror")
+
+# Train the model
+xgb_model1_apple <- xgb.train(params = params1_apple, data = dtrain1_apple, nrounds = 100)
+
+# Predict and evaluate
+predictionsxg_1_apple <- predict(xgb_model1_apple, dtest1_apple)
+rmse_xg1_apple <- sqrt(mean((predictionsxg_1_apple - test_data$AAPL.Close)^2))
+print(rmse_xg1_apple)
+
+```
+
+```{r}
+library(ggplot2)
+
+# Assuming 'test_data' contains your test dataset with 'Date', 'AAPL.Close', and 'predictionsxg_1_apple' columns
+# Convert 'Date' column to a Date object if it's not already
+test_data$Date <- as.Date(test_data$Date)
+
+# Create a data frame for plotting
+plot_data <- data.frame(Date = test_data$Date, Actual = test_data$AAPL.Close, Predicted = predictionsxg_1_apple)
+
+# Plotting using ggplot
+ggplot(plot_data, aes(x = Date)) +
+  geom_line(aes(y = Actual, color = "Actual")) +
+  geom_line(aes(y = Predicted, color = "Predicted")) +
+  labs(x = "Date", y = "Value", title = "Actual vs Predicted Over Time") +
+  scale_color_manual(values = c("Actual" = "blue", "Predicted" = "red")) +
+  theme_minimal()
+
+```
+
+
+
+```{r}
+#head(merged_data_r)
+#merged_data_r <- merged_data[nrow(merged_data):1, ]
+#write.csv(merged_data_r, file = "merged_data_r.csv", row.names = FALSE)
+
+
+
+train_apple_time <- AAPL_final[AAPL_final$Date <= as.Date("2023-09-1"), ]
+test_apple_time <- AAPL_final[AAPL_final$Date >= as.Date("2023-09-01"), ]
+```
+
+
+
+
+```{r}
+model_apple_rf1_time <- randomForest(AAPL.Close ~ AAPL.Volume + macd + macd.1 + rsi + ema + SMA, data = train_apple_time)
+
+# Summary of the model
+print(model_apple_rf1_time)
+
+# Predict Nasdaq using the test set
+predictions_apple_rf1_time <- predict(model_apple_rf1_time, newdata = test_apple_time)
+
+# Create a data frame for plotting
+plot_data_apple_rf1_time <- data.frame(Date = test_apple_time$Date, Actual = test_apple_time$AAPL.Close, Predicted = predictions_apple_rf1_time)
+
+library(ggplot2)
+ggplot(plot_data_apple_rf1_time, aes(x = Date)) +
+  geom_line(aes(y = Actual, color = "Actual")) +
+  geom_line(aes(y = Predicted, color = "Predicted")) +
+  labs(x = "Date", y = "Apple Value", title = "Actual vs Predicted Apple (Random Forest) Over Time") +
+  scale_color_manual(values = c("blue", "red"), labels = c("Actual", "Predicted")) +
+  theme_minimal()
+
+
+rf_mse <- mean((test_apple_time$AAPL.Close - predictions_apple_rf1_time)^2)
+rf_rmse <- sqrt(rf_mse)
+print(rf_rmse)
+#2.69
+```
+
+#Using XG Boost
+```{r}
+library(xgboost)
+
+# Selecting features for training
+train_data_xg1_apple <- as.matrix(train_apple_time[, c("AAPL.Volume", "macd", "macd.1", "rsi", "ema", "SMA")])
+train_label_xg1_apple <- train_apple_time$AAPL.Close
+
+dtrain1_apple <- xgb.DMatrix(data = train_data_xg1_apple, label = train_label_xg1_apple)
+
+# Selecting features for testing
+test_data_xg1_apple <- as.matrix(test_apple_time[, c("AAPL.Volume", "macd", "macd.1", "rsi", "ema", "SMA")])
+dtest1_apple <- xgb.DMatrix(data = test_data_xg1_apple)
+
+# Define parameters
+params1_apple <- list(booster = "gbtree", objective = "reg:squarederror")
+
+# Train the model
+xgb_model1_apple <- xgb.train(params = params1_apple, data = dtrain1_apple, nrounds = 100)
+
+# Predict and evaluate
+predictionsxg_1_apple <- predict(xgb_model1_apple, dtest1_apple)
+rmse_xg1_apple <- sqrt(mean((predictionsxg_1_apple - test_data$AAPL.Close)^2))
+print(rmse_xg1_apple)
+#138.3529
+```
+
+```{r}
+library(ggplot2)
+
+# Assuming 'test_data' contains your test dataset with 'Date', 'AAPL.Close', and 'predictionsxg_1_apple' columns
+# Convert 'Date' column to a Date object if it's not already
+test_apple_time$Date <- as.Date(test_apple_time$Date)
+
+# Create a data frame for plotting
+plot_data <- data.frame(Date = test_apple_time$Date, Actual = test_apple_time$AAPL.Close, Predicted = predictionsxg_1_apple)
+
+# Plotting using ggplot
+ggplot(plot_data, aes(x = Date)) +
+  geom_line(aes(y = Actual, color = "Actual")) +
+  geom_line(aes(y = Predicted, color = "Predicted")) +
+  labs(x = "Date", y = "Value", title = "Actual vs Predicted Over Time") +
+  scale_color_manual(values = c("Actual" = "blue", "Predicted" = "red")) +
+  theme_minimal()
+
+```
+#RF is better for technical Indicator and economic indicator
+
+
+
+#economic and technical together.
+```{r}
+head(merged_data_final)
+```
+```{r}
+set.seed(123)
+train_indices <- sample(1:nrow(merged_data_final), 0.8 * nrow(merged_data_final))
+train_data <- merged_data_final[train_indices, ]
+test_data <- merged_data_final[-train_indices, ]
+modelET <- lm(AAPL.Close ~ USDIndex + US10Yearbond + Inflation + LIBOR + AAPL.Volume + macd + macd.1 + rsi + ema + SMA, data =train_data )
+summary(modelET)
+rsquared <- summary(modelET)$r.squared
+print(rsquared)
+#0.998
+```
+```{r}
+predictions_ET1 <- predict(modelET, newdata = test_data)
+plot_data_ET1 <- data.frame(Date = test_data$Date, Actual = test_data$AAPL.Close, Predicted = predictions_ET1)
+
+# Plotting actual vs predicted values over time
+ggplot(plot_data_ET1, aes(x = Date)) +
+  geom_line(aes(y = Actual, color = "Actual")) +
+  geom_line(aes(y = Predicted, color = "Predicted")) +
+  labs(x = "Date", y = "Apple Value", title = "Actual vs Predicted Apple Over Time with both technical and Economic Indicator") +
+  scale_color_manual(values = c("blue", "red"), labels = c("Actual", "Predicted")) +
+  theme_minimal()
+rmse <- sqrt(mean((plot_data_ET1$Actual - plot_data_ET1$Predicted)^2))
+
+# Print RMSE value
+cat("Root Mean Squared Error (RMSE):", rmse, "\n")
+```
+```{r}
+modelET_RF=randomForest(AAPL.Close ~ USDIndex + US10Yearbond + Inflation + LIBOR + AAPL.Volume + macd + macd.1 + rsi + ema + SMA, data =train_data )
+print(modelET_RF)
+predictions_RF_ET <- predict(modelET_RF, newdata = test_data)
+plot_data_RF_ET <- data.frame(Date = test_data$Date, Actual = test_data$AAPL.Close, Predicted = predictions_RF_ET)
+
+# Plotting actual vs predicted values over time
+ggplot(plot_data_RF_ET, aes(x = Date)) +
+  geom_line(aes(y = Actual, color = "Actual")) +
+  geom_line(aes(y = Predicted, color = "Predicted")) +
+  labs(x = "Date", y = "Apple Value", title = "Actual vs Predicted Apple Over Time with Random Forest Model") +
+  scale_color_manual(values = c("blue", "red"), labels = c("Actual", "Predicted")) +
+  theme_minimal()
+```
+```{r}
+rmse <- sqrt(mean((predictions_RF_ET - test_data$AAPL.Close)^2))
+lmse <- mean((predictions_RF_ET - test_data$AAPL.Close)^2)
+
+# Print RMSE and LMSE
+cat("RMSE:", rmse, "\n")
+cat("LMSE:", lmse, "\n")
+varImpPlot(modelET_RF)
+```
+```{r}
+library(xgboost)
+
+features <- c("USDIndex", "US10Yearbond", "Inflation", "LIBOR", 
+              "AAPL.Volume", "macd", "macd.1", "rsi", "ema", "SMA")
+library(xgboost)
+
+# Convert data to xgb.DMatrix format
+dtrain <- xgb.DMatrix(data = as.matrix(train_data[, features]), label = train_data$AAPL.Close)
+dtest <- xgb.DMatrix(data = as.matrix(test_data[, features]))
+
+# Define parameters for xgboost
+params <- list(objective = "reg:squarederror", booster = "gbtree", eval_metric = "rmse")
+
+# Train the xgboost model
+xgb_model <- xgb.train(params = params, data = dtrain, nrounds = 100)
+
+# Make predictions on the test set
+predictions_xgb <- predict(xgb_model, dtest)
+
+# Create a data frame for plotting
+plot_data_xgb <- data.frame(Date = test_data$Date, Actual = test_data$AAPL.Close, Predicted = predictions_xgb)
+
+# Plot actual vs predicted values over time
+ggplot(plot_data_xgb, aes(x = Date)) +
+  geom_line(aes(y = Actual, color = "Actual")) +
+  geom_line(aes(y = Predicted, color = "Predicted")) +
+  labs(x = "Date", y = "Apple Value", title = "Actual vs Predicted Apple Over Time with xgboost Model") +
+  scale_color_manual(values = c("blue", "red"), labels = c("Actual", "Predicted")) +
+  theme_minimal()
+
+# Calculate RMSE and LMSE
+rmse_xgb <- sqrt(mean((predictions_xgb - test_data$AAPL.Close)^2))
+lmse_xgb <- mean((predictions_xgb - test_data$AAPL.Close)^2)
+
+# Print RMSE and LMSE
+cat("RMSE:", rmse_xgb, "\n")
+cat("LMSE:", lmse_xgb, "\n")
+
+
+```
+head(merged_data_final)
+```{r}
+#random forest with Economincal and technical but different datasplit
+
+train_data <- merged_data_final[merged_data_final$Date <= as.Date("2023-09-1"), ]
+test_data <- merged_data_final[merged_data_final$Date >= as.Date("2023-09-01"), ]
+
+
+```
+```{r}
+modelET_RF=randomForest(AAPL.Close ~ USDIndex + US10Yearbond + Inflation + LIBOR + AAPL.Volume + macd + macd.1 + rsi + ema + SMA, data =train_data )
+print(modelET_RF)
+predictions_RF_ET <- predict(modelET_RF, newdata = test_data)
+plot_data_RF_ET <- data.frame(Date = test_data$Date, Actual = test_data$AAPL.Close, Predicted = predictions_RF_ET)
+
+# Plotting actual vs predicted values over time
+ggplot(plot_data_RF_ET, aes(x = Date)) +
+  geom_line(aes(y = Actual, color = "Actual")) +
+  geom_line(aes(y = Predicted, color = "Predicted")) +
+  labs(x = "Date", y = "Apple Value", title = "Actual vs Predicted Apple Over Time with Random Forest Model") +
+  scale_color_manual(values = c("blue", "red"), labels = c("Actual", "Predicted")) +
+  theme_minimal()
+
+head(test)
+```
+```{r}
+rmse <- sqrt(mean((predictions_RF_ET - test_data$AAPL.Close)^2))
+lmse <- mean((predictions_RF_ET - test_data$AAPL.Close)^2)
+
+# Print RMSE and LMSE
+cat("RMSE:", rmse, "\n")
+cat("LMSE:", lmse, "\n")
+varImpPlot(modelET_RF)
+```
+
+
+```{r}
+library(xgboost)
+
+features <- c("USDIndex", "US10Yearbond", "Inflation", "LIBOR", 
+              "AAPL.Volume", "macd", "macd.1", "rsi", "ema", "SMA")
+library(xgboost)
+
+# Convert data to xgb.DMatrix format
+dtrain <- xgb.DMatrix(data = as.matrix(train_data[, features]), label = train_data$AAPL.Close)
+dtest <- xgb.DMatrix(data = as.matrix(test_data[, features]))
+
+# Define parameters for xgboost
+params <- list(objective = "reg:squarederror", booster = "gbtree", eval_metric = "rmse")
+
+# Train the xgboost model
+xgb_model <- xgb.train(params = params, data = dtrain, nrounds = 100)
+
+# Make predictions on the test set
+predictions_xgb <- predict(xgb_model, dtest)
+
+# Create a data frame for plotting
+plot_data_xgb <- data.frame(Date = test_data$Date, Actual = test_data$AAPL.Close, Predicted = predictions_xgb)
+
+# Plot actual vs predicted values over time
+ggplot(plot_data_xgb, aes(x = Date)) +
+  geom_line(aes(y = Actual, color = "Actual")) +
+  geom_line(aes(y = Predicted, color = "Predicted")) +
+  labs(x = "Date", y = "Apple Value", title = "Actual vs Predicted Apple Over Time with xgboost Model") +
+  scale_color_manual(values = c("blue", "red"), labels = c("Actual", "Predicted")) +
+  theme_minimal()
+
+# Calculate RMSE and LMSE
+rmse_xgb <- sqrt(mean((predictions_xgb - test_data$AAPL.Close)^2))
+lmse_xgb <- mean((predictions_xgb - test_data$AAPL.Close)^2)
+
+# Print RMSE and LMSE
+cat("RMSE:", rmse_xgb, "\n")
+cat("LMSE:", lmse_xgb, "\n")
+
+
+```
+
+
+
+```{r}
+
+
+
+
+```
+
+
