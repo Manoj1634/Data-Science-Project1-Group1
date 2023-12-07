@@ -233,11 +233,30 @@ summary(model)
 # Predict Nasdaq using the test set
 predictions <- predict(model, newdata = test_data)
 
+library(ggplot2)
+
+# Assuming 'test_data' contains 'Nasdaq' column for actual values and 'predictions' for predicted values
+plot_data <- data.frame(Date = test_data$Date, Actual = test_data$Nasdaq, Predicted = predictions)
+
+# Plotting actual vs predicted values over time
+ggplot(plot_data, aes(x = Date)) +
+  geom_line(aes(y = Actual, color = "Actual")) +
+  geom_line(aes(y = Predicted, color = "Predicted")) +
+  labs(x = "Date", y = "Nasdaq Value", title = "Actual vs Predicted Nasdaq Over Time") +
+  scale_color_manual(values = c("blue", "red"), labels = c("Actual", "Predicted")) +
+  theme_minimal()
 # Evaluate model performance (e.g., calculate R-squared)
 rsquared <- summary(model)$r.squared
 
 An R-squared value of 0.745 means that approximately 74.5% of the variability in the Nasdaq variable can be explained by the variation in the predictors (USDIndex, US10Yearbond, Inflation, LIBOR, and FEDrates) in your model. In simpler terms, it suggests that these independent variables collectively account for 74.5% of the changes observed in the Nasdaq values. The higher the R-squared value (closer to 1), the better the model fits the data.
 
+rmse <- sqrt(mean((predictions - test_data$Nasdaq)^2))
+lmse <- mean((predictions - test_data$Nasdaq)^2)
+
+# Print RMSE and LMSE
+cat("RMSE:", rmse, "\n")
+cat("LMSE:", lmse, "\n")
+varImpPlot(model)
 AIC_value <- AIC(model)
 
 # Print the AIC value
@@ -252,5 +271,108 @@ print(BIC_value)
 #check which is better for using the other variable S&P 500 or 
 #predict nifty50 using NASDAQ
 
+# Load the required library
+library(randomForest)
+
+# Assuming 'merged_data' contains the necessary columns
+
+# Split the data into training and test sets (80-20 split)
+set.seed(123)
+train_indices <- sample(1:nrow(merged_data), 0.8 * nrow(merged_data))
+train_data <- merged_data[train_indices, ]
+test_data <- merged_data[-train_indices, ]
+
+# Fit a Random Forest model
+model_rf <- randomForest(Nasdaq ~ USDIndex + US10Yearbond + Inflation + LIBOR , data = train_data)
+
+# Summary of the model
+print(model_rf)
+
+# Predict Nasdaq using the test set
+predictions_rf <- predict(model_rf, newdata = test_data)
+
+# Create a data frame for plotting
+plot_data_rf <- data.frame(Date = test_data$Date, Actual = test_data$Nasdaq, Predicted = predictions_rf)
+
+# Plotting actual vs predicted values over time
+library(ggplot2)
+ggplot(plot_data_rf, aes(x = Date)) +
+  geom_line(aes(y = Actual, color = "Actual")) +
+  geom_line(aes(y = Predicted, color = "Predicted")) +
+  labs(x = "Date", y = "Nasdaq Value", title = "Actual vs Predicted Nasdaq (Random Forest) Over Time") +
+  scale_color_manual(values = c("blue", "red"), labels = c("Actual", "Predicted")) +
+  theme_minimal()
+
+rf_mse <- mean((test_data$Nasdaq - predictions_rf)^2)
+rf_rmse <- sqrt(rf_mse)
+
+# Display RMSE
+print(paste("Random Forest RMSE:", rf_rmse))
+
+# Feature Importance
+varImpPlot(model_rf)
+
+library(forecast)
+
+# Assuming 'data' is your time series data
+# Convert 'data' to a time series object
+
+library(vars)
+
+# Assuming 'data' contains your multivariate time series data
+# Convert 'data' to time series object
+ts_data <- ts(Nasdaq, frequency = 2)  # Frequency is set based on the time intervals of your data
+
+# Fit VAR model
+var_model <- VAR(ts_data)
+
+# Summary of the VAR model
+summary(var_model)
+
+# Forecasting
+forecast_results <- predict(var_model, n.ahead = 30)  # Forecast for the next 10 periods
+
+# View forecast results
+print(forecast_results)
+
+# Load necessary libraries
+library(forecast)
+
+library(dplyr)
+library(tidyr)
+
+# Assuming your dataset is named 'Nasdaq' and contains columns 'Date' and 'Value'
+
+# Convert 'Date' column to Date format if it's not already in Date format
+Nasdaq$Date <- as.Date(Nasdaq$Date)
+
+# Create a complete sequence of dates from the minimum to maximum date
+complete_dates <- data.frame(Date = seq(min(Nasdaq$Date), max(Nasdaq$Date), by = "1 day"))
+
+# Merge the complete sequence of dates with Nasdaq dataset
+filled_dates <- complete_dates %>%
+  left_join(Nasdaq, by = "Date") %>%
+  fill(Price, .direction = "down")  # Fill missing values with the last available value
+
+# The filled_dates dataset will contain the missing dates with values filled from the last available date
+head(filled_dates, 15)
+# Load necessary libraries
+library(forecast)
+
+# Assuming 'data' is your time series data
+# Convert 'data' to a time series object
+ts_data <- ts(filled_dates, frequency = 1)  # Assuming monthly data
+
+# Fit an ARIMA model to the time series data
+ts_model <- auto.arima(ts_data)
+
+# Summary of the ARIMA model
+summary(ts_model)
+
+# Forecast using the ARIMA model
+forecast_values <- forecast(ts_model, h = 12)  # Forecasting the next 12 periods
+
+# Print the forecasted values
+print(forecast_values)
 
 
