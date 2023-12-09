@@ -1,0 +1,201 @@
+---
+title: "Analysis of Various Global Indexes"
+author: "Group1"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    code_folding: hide
+    number_sections: false
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+---
+\pagebreak
+
+*Question 6 : What factors contribute to the performance of the USD, and how can we achieve a more balanced trade-off between precision and recall from regressors for better prediction of future performance?*
+
+|   The objective of this study is to investigate the factors contributing to the performance of the US Dollar (USD) and to enhance the predictive accuracy of models through a balanced trade-off between precision and recall. The dataset used for this analysis includes daily observations of the USD, S&P 500, Silver, Natural Gas, Crude Oil, and Gold. <br>
+
+```{r, message=FALSE}
+library(readxl)
+library(readr)
+library(dplyr)
+library(dtplyr)
+library(formattable)
+library(magrittr)
+library(ezids)
+library(corrplot)
+USDollar <- read_csv("US Dollar Index Historical Data.csv")
+CrudeOil <- read_csv("Crude Oil WTI Futures Historical Data.csv")
+Nat_Gas <- read_csv("Natural Gas Futures Historical Data.csv")
+Gold <- read_csv("Gold Futures Historical Data.csv")
+Silver <- read_csv("Silver Futures Historical Data.csv")
+SP500 <- read_csv("S&P 500 Historical Data.csv")
+xkabledply(head(USDollar), title = "US Dollar")
+xkabledply(head(CrudeOil), title = "Crude Oil")
+xkabledply(head(Nat_Gas), title = "Natural Gas")
+xkabledply(head(Gold), title = "Gold")
+xkabledply(head(Silver), title = "Silver")
+xkabledply(head(SP500), title = "S&P 500")
+```
+
+```{r}
+USDollar <- USDollar %>%
+     rename(US_Dollar = Price)
+SP500 <- SP500 %>%
+     rename(SP_500 = Price)
+Silver <- Silver %>%
+     rename(Silver = Price)
+Nat_Gas <- Nat_Gas  %>%
+     rename(Nat_Gas = Price)
+Gold <- Gold %>%
+     rename(Gold = Price)
+CrudeOil<- CrudeOil %>%
+     rename(Crude_Oil = Price)
+```
+
+```{r}
+USDollar <- tail(USDollar, 4020)
+SP500 <- tail(SP500, 4020)
+Silver <- tail(Silver, 4020)
+Nat_Gas <- tail(Nat_Gas, 4020)
+Gold <- tail(Gold, 4020)
+CrudeOil <- tail(CrudeOil, 4020)
+```
+
+```{r}
+USDollar$USD_perform <- ifelse(as.numeric(gsub("%", "", USDollar$`Change %`)) > 0, 1, 0)
+```
+
+```{r, fig.pos="H"}
+data <- bind_cols(
+      select(USDollar, US_Dollar),
+      select(USDollar, USD_perform),
+      select(SP500, SP_500),
+      select(Silver, Silver),
+      select(Nat_Gas, Nat_Gas),
+      select(CrudeOil, Crude_Oil),
+      select(Gold, Gold),
+   )
+xkabledply(head(data))
+data1 <- bind_cols(
+      select(USDollar, US_Dollar),
+      select(SP500, SP_500),
+      select(Silver, Silver),
+      select(Nat_Gas, Nat_Gas),
+      select(CrudeOil, Crude_Oil),
+      select(Gold, Gold),
+   )
+correlation <- cor(data1)
+corrplot(correlation, method = "color", type = "upper", tl.col = "black", tl.srt = 45)
+```
+<br>
+   Correlation plots are used to visualize the relationships between multiple variables. In this specific case, the plot shows the correlation coefficients between the prices of the US Dollar and various common commodities. S&P 500 Index and Gold Index dance in unison, their prices tightly related to the USD, reflecting their global dependence. In contrast, silver Index and Natural Gas Index, like independent musicians, chart their own course, negatively corrolated to the USD's fluctuations. The Crude Oil Index, a reflection of the US economy, observed a stron negative correlation to the USD Index, . This intricate web of correlations paints a vivid picture of how global economic forces, individual commodity dynamics, and investor sentiment harmonize to create the diverse melody of the global market.<br>
+
+|   To establish a quantitative understanding of the interplay between the USD and other financial instruments, we employed a multiple linear regression model. This model considered the S&P 500, Silver, Natural Gas, Crude Oil, and Gold as predictor variables for USD performance. The coefficients derived from the model shed light on the impact of each predictor on the USDollar. <br>
+```{r}
+library(ezids)
+lm_model <- lm(US_Dollar ~ SP_500 + Silver + Nat_Gas + Crude_Oil + Gold, data = data)
+```
+<table style="text-align:center"><caption>Linear Regression Model</caption><tr><td colspan="2" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left"></td><td><em>Dependent variable:</em></td></tr>
+<tr><td></td><td colspan="1" style="border-bottom: 1px solid black"></td></tr>
+<tr><td style="text-align:left"></td><td>US_Dollar</td></tr>
+<tr><td colspan="2" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left">SP_500</td><td>0.004<sup>***</sup></td></tr>
+<tr><td style="text-align:left"></td><td>(0.0001)</td></tr>
+<tr><td style="text-align:left"></td><td></td></tr>
+<tr><td style="text-align:left">Silver</td><td>-0.665<sup>***</sup></td></tr>
+<tr><td style="text-align:left"></td><td>(0.026)</td></tr>
+<tr><td style="text-align:left"></td><td></td></tr>
+<tr><td style="text-align:left">Nat_Gas</td><td>-0.151<sup>**</sup></td></tr>
+<tr><td style="text-align:left"></td><td>(0.060)</td></tr>
+<tr><td style="text-align:left"></td><td></td></tr>
+<tr><td style="text-align:left">Crude_Oil</td><td>-0.114<sup>***</sup></td></tr>
+<tr><td style="text-align:left"></td><td>(0.005)</td></tr>
+<tr><td style="text-align:left"></td><td></td></tr>
+<tr><td style="text-align:left">Gold</td><td>0.012<sup>***</sup></td></tr>
+<tr><td style="text-align:left"></td><td>(0.001)</td></tr>
+<tr><td style="text-align:left"></td><td></td></tr>
+<tr><td style="text-align:left">Interpret</td><td>87.194<sup>***</sup></td></tr>
+<tr><td style="text-align:left"></td><td>(0.453)</td></tr>
+<tr><td style="text-align:left"></td><td></td></tr>
+<tr><td colspan="2" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left">Observations</td><td>4,020</td></tr>
+<tr><td style="text-align:left">R<sup>2</sup></td><td>0.757</td></tr>
+<tr><td style="text-align:left">Adjusted R<sup>2</sup></td><td>0.757</td></tr>
+<tr><td style="text-align:left">Residual Std. Error</td><td>4.629 (df = 4014)</td></tr>
+<tr><td style="text-align:left">F Statistic</td><td>2,507.296<sup>***</sup> (df = 5; 4014)</td></tr>
+<tr><td colspan="2" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left"><em>Note:</em></td><td style="text-align:right"><sup>*</sup>p<0.1; <sup>**</sup>p<0.05; <sup>***</sup>p<0.01</td></tr>
+</table>
+<br>
+   The results of the linear regression analysis provide valuable insights into the dynamics between the US Dollar (USD) and key financial instruments. The intercept, though statistically significant, may lack practical interpretation in the financial context. Notably, a one-unit increase in the S&P 500 is associated with a slight uptick in the USD, suggesting a modest positive relationship. Conversely, the negative coefficients for Silver, Natural Gas, and Crude Oil indicate a potential negative correlation with the USD. As Silver, Natural Gas, and Crude Oil values rise, the USD tends to decrease. The positive coefficient for Gold suggests a positive association, indicating that an increase in Gold values corresponds to an increase in the USD. These interpretations provide a foundation for understanding how fluctuations in these financial variables may influence the USD's performance.
+<br>
+```{r}
+library(ROCR)
+library(glm2)
+logit_model <- glm2(USD_perform ~ SP_500 + Silver + Nat_Gas + Crude_Oil + Gold, data = data, family=binomial(link="logit"))
+xkabledply(logit_model, title = "Logit regression Model")
+```
+<br>
+  The logistic regression model was employed to predict the performance of the US Dollar (USD_perform) based on the values of the S&P 500 (SP_500), Silver, Natural Gas (Nat_Gas), Crude Oil, and Gold. <br>
+   The estimated coefficients provide insights into the log-odds of the dependent variable. Notably, the intercept (-0.1057) represents the log-odds of the baseline performance of the USD, with a p-value of 0.5896, indicating that it is not statistically significant. Among the predictor variables, Silver exhibits a negative coefficient (-0.02051) with a p-value of 0.0647, suggesting a potential association with USD performance. Similarly, Gold has a positive coefficient (0.0004663) with a p-value of 0.1265, indicating a possible positive relationship.  <br>
+
+```{r}
+probit_model <- glm2(USD_perform ~ SP_500 + Silver + Nat_Gas + Crude_Oil + Gold, data = data, family=binomial(link="probit"))
+xkabledply(probit_model, title = "Probit Regression Model")
+```
+<br>
+   The estimated coefficients provide insights into the effects of the predictor variables on the probability of the USD's performance. The intercept (-0.06623) represents the baseline log-odds, with a p-value of 0.5896, indicating it is not statistically significant. Among the predictor variables, Silver exhibits a negative coefficient (-0.01283) with a p-value of 0.0645, suggesting a potential negative relationship with USD performance. Conversely, Gold has a positive coefficient (0.0002918) with a p-value of 0.1264, indicating a possible positive association. 
+<br>
+
+```{r}
+predicted_probabilities <- predict(logit_model, newdata = data, type = "response")
+predicted_classes <- ifelse(predicted_probabilities > 0.5, 1, 0)
+data$Predicted_USD_perform <- predicted_classes
+conf_matrix <- table(data$USD_perform, data$Predicted_USD_perform)
+```
+
+<table style="margin: 0 auto;">
+  <caption>Confusion Matrix Table</caption>
+  <tr><td colspan="3" style="border-bottom: 1px solid black"></td></tr>
+  <tr><th></th><th>Negative</th><th>Positive</th></tr>
+  <tr><td>Negative</td><td>$1,806$</td><td>$270$</td></tr>
+  <tr><td>Positive</td><td>$1,636$</td><td>$308$</td></tr>
+  <tr><td colspan="3" style="border-top: 1px solid black"></td></tr>
+</table>
+<br>
+*accuracy:* $(TP + TN) / (TP + TN + FP + FN) = (308 + 1806) / (308 + 1806 + 270 + 1636) ≈ 0.5225$ <br>
+*Precision:* $TP / (TP + FP) = 308 / (308 + 270) ≈ 0.5328$ <br>
+*Recall (Sensitivity):* $TP / (TP + FN) = 308 / (308 + 1636) ≈ 0.1588$ <br>
+*F1 Score:* $2 * (Precision * Recall) / (Precision + Recall) ≈ 0.2423$ <br>
+
+   While the model demonstrates moderate accuracy and precision, the relatively low recall indicates a challenge in effectively identifying positive instances. <br>
+
+```{r, message=FALSE}
+library(pROC)
+```
+```{r}
+roc_curve <- roc(data$USD_perform, predicted_probabilities)
+plot(roc_curve, main = "ROC Curve", col = "blue", lwd = 2)
+roc_curve
+```
+<br>
+   The ROC curve analysis indicates that the model's discriminatory ability is only slightly better than chance. However, an AUC (0.516) in this range suggests that the model's ability to discriminate between positive and negative instances is limited. <br>
+   
+   In the realm of predictive modeling, the Random Forest algorithm stands out as a versatile and powerful tool for tackling complex classification tasks. As we delve into the Random Forest analysis, the ROC curve serves as a crucial starting point, offering insights into the algorithm's capability to distinguish positive and negative instances.  <br>
+
+```{r, message=FALSE}
+library(randomForest)
+```
+```{r}
+response_variable <- "USD_perform"
+data$USD_perform <- as.factor(data$USD_perform)
+predictors <- c("SP_500", "Silver", "Nat_Gas", "Crude_Oil", "Gold")
+rf_model <- randomForest(formula = as.formula(paste(response_variable, "~", paste(predictors, collapse = "+"))), data = data)
+print(rf_model)
+```
+<br>
+  The confusion matrix of the Random Forest breaks down the model's predictions, showing the counts for true positives (1071), false positives (1005), false negatives (1119), and true negatives (825). The class error rates for predicting class 0 and class 1 are also provided, offering insights into the model's performance for each class. The Random Forest model was configured for a classification task with 500 trees, each considering two randomly chosen variables at every split. The out-of-bag (OOB) estimate of the error rate, a measure of how well the model generalizes to unseen data, stands at approximately 52.84%. This suggests that, on average, the model is expected to make accurate predictions for about 47.16% of instances.<br>
+  
+In conclusion, the analysis of the US Dollar performance using logistic regression and a Random Forest model provides valuable insights into the intricate relationship between predictor variables and the currency's behavior. While the analyses contribute valuable information, it's crucial to acknowledge some limitations. The models exhibit challenges, and achieving a more balanced trade-off might require further exploration of model parameters or the need of big data sample. Therefore, we cannot conclude that the commodities have an impact on the dollar index and its performance.
+
+
+
