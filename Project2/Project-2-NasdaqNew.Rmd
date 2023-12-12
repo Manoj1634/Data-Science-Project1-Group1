@@ -1,0 +1,323 @@
+---
+title: "Group1-Project2"
+author: "Yasaswitha"
+date: "2023-12-03"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r}
+library(readr)
+library(tidyverse)
+library(caret)
+library(randomForest)
+library(dplyr)
+```
+
+```{r}
+nasdaq_data <- read.csv("C:/Users/gpras/Downloads/Nasdaq 100 Historical Data.csv")  
+str(nasdaq_data)
+colnames(nasdaq_data)
+```
+```{r}
+# Convert 'Date' to Date type
+nasdaq_data$Date <- as.Date(nasdaq_data$Date, format="%m/%d/%Y")
+```
+
+```{r}
+# Function to convert volume strings to numeric
+convert_volume <- function(vol) {
+  multiplier <- 1
+  if (grepl("M", vol)) {
+    multiplier <- 1e6
+    vol <- gsub("M", "", vol)
+  } else if (grepl("B", vol)) {
+    multiplier <- 1e9
+    vol <- gsub("B", "", vol)
+  } else if (grepl("K", vol)) {
+    multiplier <- 1e3
+    vol <- gsub("K", "", vol)
+  }
+  as.numeric(gsub(",", "", vol)) * multiplier
+}
+
+# Apply conversions
+nasdaq_data$Price <- as.numeric(gsub(",", "", nasdaq_data$Price))
+nasdaq_data$Open <- as.numeric(gsub(",", "", nasdaq_data$Open))
+nasdaq_data$High <- as.numeric(gsub(",", "", nasdaq_data$High))
+nasdaq_data$Low <- as.numeric(gsub(",", "", nasdaq_data$Low))
+nasdaq_data$Vol. <- sapply(nasdaq_data$Vol., convert_volume)
+nasdaq_data$Change.. <- as.numeric(gsub("%", "", nasdaq_data$Change..)) / 100
+
+# Handle missing values
+# Calculate the median for the 'Vol.' column excluding NA values
+median_vol <- median(nasdaq_data$Vol., na.rm = TRUE)
+# Replace NA values in 'Vol.' column with the median
+nasdaq_data$Vol.[is.na(nasdaq_data$Vol.)] <- median_vol
+
+# Calculate the median for the 'Price' column excluding NA values
+median_price <- median(nasdaq_data$Price, na.rm = TRUE)
+# Replace NA values in 'Price' column with the median
+nasdaq_data$Price[is.na(nasdaq_data$Price)] <- median_price
+
+# Calculate the median for the 'Open' column excluding NA values
+median_open <- median(nasdaq_data$Open, na.rm = TRUE)
+# Replace NA values in 'Open' column with the median
+nasdaq_data$Open[is.na(nasdaq_data$Open)] <- median_open
+
+# Calculate the median for the 'High' column excluding NA values
+median_high <- median(nasdaq_data$High, na.rm = TRUE)
+# Replace NA values in 'High' column with the median
+nasdaq_data$High[is.na(nasdaq_data$High)] <- median_high
+
+# Calculate the median for the 'Low' column excluding NA values
+median_low <- median(nasdaq_data$Low, na.rm = TRUE)
+# Replace NA values in 'Low' column with the median
+nasdaq_data$Low[is.na(nasdaq_data$Low)] <- median_low
+
+# Calculate the median for the 'Change' column excluding NA values
+median_change <- median(nasdaq_data$Change, na.rm = TRUE)
+# Replace NA values in 'Change' column with the median
+nasdaq_data$Change[is.na(nasdaq_data$Change)] <- median_change
+
+
+# Optional: Feature Engineering
+# nasdaq_data$Year <- lubridate::year(nasdaq_data$Date)
+# nasdaq_data$Month <- lubridate::month(nasdaq_data$Date)
+# nasdaq_data$Day <- lubridate::day(nasdaq_data$Date)
+
+str(nasdaq_data)
+
+```
+
+```{r}
+# Assuming nasdaq_data is your preprocessed Nasdaq 100 dataset
+
+# Converting the Date column to Date type if not already
+nasdaq_data$Date <- as.Date(nasdaq_data$Date)
+
+# Splitting the data based on the date
+train_nasdaq <- nasdaq_data[nasdaq_data$Date <= as.Date("2019-12-31"), ]
+test_nasdaq <- nasdaq_data[nasdaq_data$Date >= as.Date("2020-01-01"), ]
+
+# Building the linear regression model
+model_nasdaq <- lm(Price ~ Open + High + Low + `Vol.` + `Change..`, data = train_nasdaq)
+
+# Predicting and evaluating the model
+predictions_nasdaq <- predict(model_nasdaq, newdata = test_nasdaq)
+mse_nasdaq <- mean((predictions_nasdaq - test_nasdaq$Price)^2)
+print(mse_nasdaq)
+summary(model_nasdaq)
+```
+
+```{r}
+library(randomForest)
+
+# Splitting the data based on the date
+train_nasdaq <- nasdaq_data[nasdaq_data$Date <= as.Date("2019-12-31"), ]
+test_nasdaq <- nasdaq_data[nasdaq_data$Date >= as.Date("2020-01-01"), ]
+
+# Building the Random Forest model
+rf_model_nasdaq <- randomForest(Price ~ Open + High + Low + `Vol.` + `Change..`, data = train_nasdaq)
+
+# Predicting and evaluating the model
+predictions_nasdaq <- predict(rf_model_nasdaq, newdata = test_nasdaq)
+mse_nasdaq <- mean((predictions_nasdaq - test_nasdaq$Price)^2)
+print(mse_nasdaq)
+```
+
+```{r}
+# MSE
+mse_nasdaq <- mean((predictions_nasdaq - test_nasdaq$Price)^2)
+
+# RMSE
+rmse_nasdaq <- sqrt(mse_nasdaq)
+
+# MAE
+mae_nasdaq <- mean(abs(predictions_nasdaq - test_nasdaq$Price))
+
+# R-squared
+r_squared_nasdaq <- summary(lm(predictions_nasdaq ~ test_nasdaq$Price))$r.squared
+
+# Print the metrics
+print(paste("MSE:", mse_nasdaq))
+print(paste("RMSE:", rmse_nasdaq))
+print(paste("MAE:", mae_nasdaq))
+print(paste("R-squared:", r_squared_nasdaq))
+```
+
+
+```{r}
+library(ggplot2)
+# Adding predictions to the test dataset
+test_nasdaq$Predicted_Price <- predictions_nasdaq
+
+# Plotting Actual vs Predicted Prices
+ggplot(test_nasdaq, aes(x = Price, y = Predicted_Price)) +
+  geom_point() +
+  geom_abline(slope = 1, intercept = 0, color = "red") +  # Line y=x for reference
+  labs(title = "Actual vs Predicted Prices - Nasdaq 100",
+       x = "Actual Price",
+       y = "Predicted Price") +
+  theme_minimal()
+```
+
+```{r}
+# Calculate percentage of accurate predictions within a 10% range
+# Define and assign a value to accuracy_threshold
+accuracy_threshold <- 0.1  # Assuming a 10% range
+
+accurate_predictions_nasdaq <- abs(test_nasdaq$Predicted_Price - test_nasdaq$Price) <= (accuracy_threshold * test_nasdaq$Price)
+accuracy_percentage_nasdaq <- mean(accurate_predictions_nasdaq) * 100
+
+print(paste("Percentage of accurate predictions within 10% range - Nasdaq 100:", accuracy_percentage_nasdaq))
+
+```
+```{r}
+library(quantmod)
+library(ggplot2)
+# Convert nasdaq_data to an xts object
+nasdaq_xts <- xts(nasdaq_data[, -1], order.by = as.Date(nasdaq_data$Date))
+
+# Calculate MACD
+nasdaq_macd <- MACD(nasdaq_xts$Price)
+
+# Combine Price and MACD for plotting
+nasdaq_combined <- merge(nasdaq_xts$Price, nasdaq_macd)
+
+# Plot
+plot.xts(nasdaq_combined, screens = 1, col = c("blue", "red", "green"),
+        main = "Price and MACD - Nasdaq 100", ylab = "Value")
+
+```
+
+```{r}
+library(pROC)
+# Assuming nasdaq_macd is already calculated
+
+# Generate binary trading signals based on MACD
+nasdaq_signals <- ifelse(nasdaq_macd$macd > nasdaq_macd$signal, 1, 0)
+nasdaq_returns <- diff(log(nasdaq_xts$Price))
+nasdaq_labels <- ifelse(nasdaq_returns > 0, 1, 0)
+
+# Calculate ROC
+nasdaq_roc <- roc(nasdaq_labels[-1], nasdaq_signals[-1])  # Exclude first element due to diff
+
+# Plot ROC
+plot(nasdaq_roc, main = "ROC Curve - Trading Signals Based on MACD for Nasdaq 100")
+```
+
+```{r}
+library(xgboost)
+# Assuming nasdaq_data is your dataset and it's already split into train_nasdaq and test_nasdaq
+
+# Prepare the data
+train_data_nasdaq <- as.matrix(train_nasdaq[, c("Open", "High", "Low", "Vol.", "Change..")])
+train_label_nasdaq <- train_nasdaq$Price
+dtrain_nasdaq <- xgb.DMatrix(data = train_data_nasdaq, label = train_label_nasdaq)
+
+test_data_nasdaq <- as.matrix(test_nasdaq[, c("Open", "High", "Low", "Vol.", "Change..")])
+dtest_nasdaq <- xgb.DMatrix(data = test_data_nasdaq)
+
+# Define parameters
+params_nasdaq <- list(booster = "gbtree", objective = "reg:squarederror")
+
+# Train the model
+xgb_model_nasdaq <- xgb.train(params = params_nasdaq, data = dtrain_nasdaq, nrounds = 100)
+
+# Predict and evaluate
+predictions_nasdaq <- predict(xgb_model_nasdaq, dtest_nasdaq)
+rmse_nasdaq <- sqrt(mean((predictions_nasdaq - test_nasdaq$Price)^2))
+print(rmse_nasdaq)
+```
+
+```{r}
+library(ggplot2)
+test_nasdaq$Predicted_Price <- predictions_nasdaq
+```
+
+```{r}
+ggplot(test_nasdaq, aes(x = Date)) +
+  geom_line(aes(y = Price, colour = "Actual Price")) +
+  geom_line(aes(y = Predicted_Price, colour = "Predicted Price")) +
+  labs(title = "Actual vs Predicted Prices - Nasdaq 100", y = "Price", colour = "Legend") +
+  theme_minimal()
+```
+
+```{r}
+ggplot(nasdaq_data, aes(x = Open, y = Price)) +
+  geom_point() +
+  geom_smooth(method = "lm", color = "green") +
+  labs(title = "Nasdaq - Scatter Plot of Open vs. Price", x = "Opening Price", y = "Closing Price") +
+  theme_minimal()
+```
+
+
+```{r}
+### 1. Extracting Time-Based Features
+
+#Before creating the plots, you need to extract time-based features like month or year from your date column. Here's how you can do it in R:
+
+test_nasdaq$Month <- format(as.Date(test_nasdaq$Date), "%m")
+test_nasdaq$Year <- format(as.Date(test_nasdaq$Date), "%Y")
+
+### 2. Month/Year-wise Aggregate Analysis
+
+#Plotting the average price by month or year can show seasonal or yearly trends.
+
+#### Average Price by Month
+# For Nasdaq
+ggplot(test_nasdaq, aes(x = Month, y = Price)) +
+  stat_summary(fun = mean, geom = "bar", fill = "lightblue") +
+  labs(title = "Average Price by Month - Nasdaq", y = "Average Price") +
+  theme_minimal()
+
+```
+
+```{r}
+# For Nasdaq
+ggplot(test_nasdaq, aes(x = Year, y = Price)) +
+  stat_summary(fun = mean, geom = "bar", fill = "lightblue") +
+  labs(title = "Average Price by Year - Nasdaq", y = "Average Price") +
+  theme_minimal()
+```
+
+```{r}
+##Regression with Time-Based Predictors
+
+#You can also include these time-based features in your regression model and then plot the coefficients to show their significance.
+
+# Example Linear Regression with Time Features
+library(coefplot)
+model <- lm(Price ~ Month + Year, data = test_nasdaq)
+summary(model)  # Check the significance of the coefficients
+
+# Coefficient plot
+coefplot(model)
+```
+
+
+
