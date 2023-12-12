@@ -1,0 +1,323 @@
+---
+title: "Project2_group1_Nifty50"
+author: "Yasaswitha" 
+date: "2023-12-01"
+output: html_document
+---
+```{r}
+
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+convert_volume <- function(volume) {
+  # Your function logic here
+}
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r}
+library(readr)
+library(tidyverse)
+library(caret)
+library(randomForest)
+library(dplyr)
+```
+
+```{r}
+# Load datasets
+nifty50_data <- read.csv("C:/Users/gpras/Downloads/Nifty 50 Historical Data.csv") 
+str(nifty50_data)
+colnames(nifty50_data)
+```
+```{r}
+# Convert 'Date' to Date type
+nifty50_data$Date <- as.Date(nifty50_data$Date, format="%m/%d/%Y")
+```
+
+```{r}
+# Function to convert volume to numeric
+convert_volume <- function(vol) {
+  multiplier <- 1
+  if (grepl("M", vol)) {
+    multiplier <- 1e6
+    vol <- gsub("M", "", vol)
+  } else if (grepl("B", vol)) {
+    multiplier <- 1e9
+    vol <- gsub("B", "", vol)
+  } else if (grepl("K", vol)) {
+    multiplier <- 1e3
+    vol <- gsub("K", "", vol)
+  }
+  as.numeric(gsub(",", "", vol)) * multiplier
+}
+
+# Apply conversions
+nifty50_data$Price <- as.numeric(gsub(",", "", nifty50_data$Price))
+nifty50_data$Open <- as.numeric(gsub(",", "", nifty50_data$Open))
+nifty50_data$High <- as.numeric(gsub(",", "", nifty50_data$High))
+nifty50_data$Low <- as.numeric(gsub(",", "", nifty50_data$Low))
+nifty50_data$Vol. <- sapply(nifty50_data$Vol., convert_volume)
+nifty50_data$Change.. <- as.numeric(gsub("%", "", nifty50_data$Change..)) / 100
+
+# Handle missing values
+# Calculate the median for the 'Vol.' column excluding NA values
+median_vol <- median(nifty50_data$Vol., na.rm = TRUE)
+# Replace NA values in 'Vol.' column with the median
+nifty50_data$Vol.[is.na(nifty50_data$Vol.)] <- median_vol
+
+# Calculate the median for the 'Price' column excluding NA values
+median_price <- median(nifty50_data$Price, na.rm = TRUE)
+# Replace NA values in 'Price' column with the median
+nifty50_data$Price[is.na(nifty50_data$Price)] <- median_price
+
+# Calculate the median for the 'Open' column excluding NA values
+median_open <- median(nifty50_data$Open, na.rm = TRUE)
+# Replace NA values in 'Open' column with the median
+nifty50_data$Open[is.na(nifty50_data$Open)] <- median_open
+
+# Calculate the median for the 'High' column excluding NA values
+median_high <- median(nifty50_data$High, na.rm = TRUE)
+# Replace NA values in 'High' column with the median
+nifty50_data$High[is.na(nifty50_data$High)] <- median_high
+
+# Calculate the median for the 'Low' column excluding NA values
+median_low <- median(nifty50_data$Low, na.rm = TRUE)
+# Replace NA values in 'Low' column with the median
+nifty50_data$Low[is.na(nifty50_data$Low)] <- median_low
+
+# Calculate the median for the 'Change' column excluding NA values
+median_change <- median(nifty50_data$Change, na.rm = TRUE)
+# Replace NA values in 'Change' column with the median
+nifty50_data$Change[is.na(nifty50_data$Change)] <- median_change
+
+
+# Optional: Feature Engineering
+# nifty50_data$Year <- lubridate::year(nifty50_data$Date)
+# nifty50_data$Month <- lubridate::month(nifty50_data$Date)
+# nifty50_data$Day <- lubridate::day(nifty50_data$Date)
+
+str(nifty50_data)
+```
+```{r}
+# Assuming nasdaq_data is your preprocessed Nasdaq 100 dataset
+
+# Converting the Date column to Date type if not already
+nifty50_data$Date <- as.Date(nifty50_data$Date)
+
+set.seed(123)
+train_indices <- sample(1:nrow(nifty50_data), 0.8 * nrow(nifty50_data))
+train_nifty <- nifty50_data[train_indices, ]
+test_nifty <- nifty50_data[-train_indices, ]
+
+# Splitting the data based on the date
+train_nifty <- nifty50_data[nifty50_data$Date <= as.Date("2019-12-31"), ]
+test_nifty <- nifty50_data[nifty50_data$Date >= as.Date("2020-01-01"), ]
+
+# Building the linear regression model
+model_nifty <- lm(Price ~ Open + High + Low + `Vol.` + `Change..`, data = train_nifty)
+
+# Predicting and evaluating the model
+predictions_nifty <- predict(model_nifty, newdata = test_nifty)
+mse_nifty <- mean((predictions_nifty - test_nifty$Price)^2)
+print(mse_nifty)
+summary(model_nifty)
+```
+
+```{r}
+# Splitting the data based on the date
+train_nifty <- nifty50_data[nifty50_data$Date <= as.Date("2019-12-31"), ]
+test_nifty <- nifty50_data[nifty50_data$Date >= as.Date("2020-01-01"), ]
+
+# Building the Random Forest model
+rf_model_nifty <- randomForest(Price ~ Open + High + Low + `Vol.` + `Change..`, data = train_nifty)
+
+# Predicting and evaluating
+predictions_nifty <- predict(rf_model_nifty, newdata = test_nifty)
+mse_nifty <- mean((predictions_nifty - test_nifty$Price)^2)
+print(mse_nifty)
+```
+```{r}
+# MSE
+mse_nifty <- mean((predictions_nifty - test_nifty$Price)^2)
+
+# RMSE
+rmse_nifty <- sqrt(mse_nifty)
+
+# MAE
+mae_nifty <- mean(abs(predictions_nifty - test_nifty$Price))
+
+# R-squared
+r_squared_nifty <- summary(lm(predictions_nifty ~ test_nifty$Price))$r.squared
+
+# Print the metrics
+print(paste("MSE:", mse_nifty))
+print(paste("RMSE:", rmse_nifty))
+print(paste("MAE:", mae_nifty))
+print(paste("R-squared:", r_squared_nifty))
+```
+
+```{r}
+library(ggplot2)
+# Adding predictions to the test dataset
+test_nifty$Predicted_Price <- predictions_nifty
+
+# Plotting
+ggplot(test_nifty, aes(x = Price, y = Predicted_Price)) +
+  geom_point() +
+  geom_abline(slope = 1, intercept = 0, color = "red") +  # Line y=x for reference
+  labs(title = "Actual vs Predicted Prices - Nifty 50",
+       x = "Actual Price",
+       y = "Predicted Price") +
+  theme_minimal()
+```
+
+```{r}
+# Calculate percentage of accurate predictions within a 10% range
+# Define and assign a value to accuracy_threshold
+accuracy_threshold <- 0.1  # Assuming a 10% range
+accurate_predictions_nifty <- abs(test_nifty$Predicted_Price - test_nifty$Price) <= (accuracy_threshold * test_nifty$Price)
+accuracy_percentage_nifty <- mean(accurate_predictions_nifty) * 100
+
+print(paste("Percentage of accurate predictions within 10% range - Nifty 50:", accuracy_percentage_nifty))
+```
+
+```{r}
+# Convert nifty_data to an xts object
+library(xts)
+library(TTR)
+nifty_xts <- xts(nifty50_data[, -1], order.by = as.Date(nifty50_data$Date))
+
+# Calculate MACD
+nifty_macd <- MACD(nifty_xts$Price)
+
+# Combine Price and MACD for plotting
+nifty_combined <- merge(nifty_xts$Price, nifty_macd)
+
+# Plot
+plot.xts(nifty_combined, screens = 1, col = c("blue", "red", "green"),
+        main = "Price and MACD - Nifty 50", ylab = "Value")
+```
+
+```{r}
+library(pROC)
+# Assuming nifty_macd is already calculated
+
+# Generate binary trading signals based on MACD
+nifty_signals <- ifelse(nifty_macd$macd > nifty_macd$signal, 1, 0)
+nifty_returns <- diff(log(nifty_xts$Price))
+nifty_labels <- ifelse(nifty_returns > 0, 1, 0)
+
+# Calculate ROC
+nifty_roc <- roc(nifty_labels[-1], nifty_signals[-1])  # Exclude first element due to diff
+
+# Plot ROC
+plot(nifty_roc, main = "ROC Curve - Trading Signals Based on MACD for Nifty 50")
+```
+
+```{r}
+library(xgboost)
+# Assuming nifty_data is your dataset and it's already split into train_nifty and test_nifty
+
+# Prepare the data
+train_data_nifty <- as.matrix(train_nifty[, c("Open", "High", "Low", "Vol.", "Change..")])
+train_label_nifty <- train_nifty$Price
+dtrain_nifty <- xgb.DMatrix(data = train_data_nifty, label = train_label_nifty)
+
+test_data_nifty <- as.matrix(test_nifty[, c("Open", "High", "Low", "Vol.", "Change..")])
+dtest_nifty <- xgb.DMatrix(data = test_data_nifty)
+
+# Define parameters
+params_nifty <- list(booster = "gbtree", objective = "reg:squarederror")
+
+# Train the model
+xgb_model_nifty <- xgb.train(params = params_nifty, data = dtrain_nifty, nrounds = 100)
+
+# Predict and evaluate
+predictions_nifty <- predict(xgb_model_nifty, dtest_nifty)
+rmse_nifty <- sqrt(mean((predictions_nifty - test_nifty$Price)^2))
+print(rmse_nifty)
+```
+```{r}
+test_nifty$Predicted_Price <- predictions_nifty
+```
+
+```{r}
+ggplot(test_nifty, aes(x = Date)) +
+  geom_line(aes(y = Price, colour = "Actual Price")) +
+  geom_line(aes(y = Predicted_Price, colour = "Predicted Price")) +
+  labs(title = "Actual vs Predicted Prices - Nifty 50", y = "Price", colour = "Legend") +
+  theme_minimal()
+
+```
+
+```{r}
+ggplot(nifty50_data, aes(x = Open, y = Price)) +
+  geom_point() +
+  geom_smooth(method = "lm", color = "green") +
+  labs(title = "Nasdaq - Scatter Plot of Open vs. Price", x = "Opening Price", y = " Closing Price") +
+  theme_minimal()
+
+```
+
+```{r}
+### 1. Extracting Time-Based Features
+
+#Before creating the plots, you need to extract time-based features like month or year from your date column. Here's how you can do it in R:
+test_nifty$Month <- format(as.Date(test_nifty$Date), "%m")
+test_nifty$Year <- format(as.Date(test_nifty$Date), "%Y")
+
+### 2. Month/Year-wise Aggregate Analysis
+
+#Plotting the average price by month or year can show seasonal or yearly trends.
+
+#### Average Price by Month
+# For Nifty50
+
+ggplot(test_nifty, aes(x = Month, y = Price)) +
+  stat_summary(fun = mean, geom = "bar", fill = "lightblue") +
+  labs(title = "Average Price by Month - Nifty50", y = "Average Price") +
+  theme_minimal()
+```
+
+```{r}
+# For Nasdaq
+ggplot(test_nifty, aes(x = Year, y = Price)) +
+  stat_summary(fun = mean, geom = "bar", fill = "lightblue") +
+  labs(title = "Average Price by Year - Nifty50", y = "Average Price") +
+  theme_minimal()
+```
+
+```{r}
+##Regression with Time-Based Predictors
+
+#You can also include these time-based features in your regression model and then plot the coefficients to show their significance.
+
+# Example Linear Regression with Time Features
+library(coefplot)
+model <- lm(Price ~ Month + Year, data = test_nifty)
+summary(model)  # Check the significance of the coefficients
+
+# Coefficient plot
+coefplot(model)
+```
+
